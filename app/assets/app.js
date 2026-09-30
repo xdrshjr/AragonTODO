@@ -1298,7 +1298,7 @@ function renderMemoView() {
     groups[g].forEach((m) => {
       const d = new Date(m.createdAt);
       const ds = (d.getMonth() + 1) + '月' + d.getDate() + '日';
-      h += '<div class="row m-row">' +
+      h += '<div class="row m-row" data-mid="' + m.id + '">' +
         '<div class="rmain"><div class="ttl" style="font-size:14.5px">' + esc(m.title) + '</div>' +
         '<div class="meta">' + (m.note ? esc(m.note) + '<span class="sep">·</span>' : '') + ds + '</div>' +
         '</div>' +
@@ -1536,13 +1536,32 @@ document.addEventListener('click', (e) => {
       if (!t) return;
       t.done = !t.done;
       t.doneAt = t.done ? Date.now() : null;
-      if (t.done && t.repeat && t.due) {
-        S.tasks.push({
-          id: uid(), title: t.title, note: t.note, catId: t.catId,
-          due: nextDueISO(t.due, t.repeat), repeat: t.repeat,
-          done: false, createdAt: Date.now(), doneAt: null
-        });
-        toast('已完成，「' + t.title + '」已排到 ' + dueLabel(nextDueISO(t.due, t.repeat)));
+      if (t.repeat && t.due) {
+        const nextDue = nextDueISO(t.due, t.repeat);
+        if (t.done) {
+          /* generate next occurrence, but never duplicate one that exists
+             (e.g. the task was completed, undone, then completed again) */
+          const exists = S.tasks.some((x) =>
+            x.id !== t.id && !x.done && x.title === t.title &&
+            x.repeat === t.repeat && x.due === nextDue);
+          if (!exists) {
+            S.tasks.push({
+              id: uid(), title: t.title, note: t.note, catId: t.catId,
+              due: nextDue, repeat: t.repeat,
+              done: false, createdAt: Date.now(), doneAt: null
+            });
+            toast('已完成，「' + t.title + '」已排到 ' + dueLabel(nextDue));
+          }
+        } else {
+          /* un-completing removes the auto-generated next occurrence so
+             toggling back and forth never leaves duplicates */
+          const k = S.tasks.findIndex((x) =>
+            !x.done && x.title === t.title && x.repeat === t.repeat && x.due === nextDue);
+          if (k >= 0) {
+            S.tasks.splice(k, 1);
+            toast('已恢复未完成，下一期已撤销');
+          }
+        }
       }
       persist();
       renderAll();
@@ -1853,6 +1872,12 @@ function renderStats() {
   $('#st-in').textContent = '+' + fmtAmt(inn);
   $('#st-bal').textContent = (bal >= 0 ? '+' : '−') + fmtAmt(Math.abs(bal));
 
+  /* month label reflects the month actually being viewed */
+  const isCurM = M.month === todayISO().slice(0, 7);
+  const [sy, sm] = M.month.split('-').map(Number);
+  const mLabel = isCurM ? '本月' : (sy + '年' + sm + '月');
+  $('#st-cats').previousElementSibling.textContent = '分类占比（' + mLabel + '支出）';
+
   /* category bars */
   const byCat = {};
   rs.filter((r) => r.type === 'out').forEach((r) => {
@@ -1875,11 +1900,12 @@ function renderStats() {
     .filter((r) => (r.date || '').slice(0, 7) === m && r.type === 'out')
     .reduce((a, r) => a + (r.amount || 0), 0));
   const mx = Math.max.apply(null, sums.concat([1]));
-  const pts = sums.map((v, i) =>
-    (i * (320 / 5)).toFixed(1) + ',' + (84 - (v / mx) * 72 + 3).toFixed(1)).join(' ');
+  const X = (i) => (6 + i * ((320 - 12) / 5)).toFixed(1); /* keep dots inside viewBox */
+  const Y = (v) => (84 - (v / mx) * 72 + 3).toFixed(1);
+  const pts = sums.map((v, i) => X(i) + ',' + Y(v)).join(' ');
   $('#st-svg').innerHTML =
     '<polyline points="' + pts + '" fill="none" stroke="#CC785C" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"/>' +
-    sums.map((v, i) => '<circle cx="' + (i * (320 / 5)).toFixed(1) + '" cy="' + (84 - (v / mx) * 72 + 3).toFixed(1) + '" r="3" fill="#CC785C"/>').join('');
+    sums.map((v, i) => '<circle cx="' + X(i) + '" cy="' + Y(v) + '" r="3" fill="#CC785C"/>').join('');
   $('#st-months').innerHTML = months.map((m) => '<span>' + m.slice(5).replace('-', '/') + '</span>').join('');
 
   /* budget */
@@ -1937,7 +1963,29 @@ $('#exp-btn').addEventListener('click', async () => {
     toast(copied ? '备份已复制到剪贴板' : '导出失败：' + e.message);
   }
 });
-$('#imp-btn').addEventListener('click', () => $('#imp-file').click());
+/* two-step import confirm (native confirm() is unavailable in this WebView) */
+let impArmed = 0;
+$('#imp-btn').addEventListener('click', () => {
+  const btn = $('#imp-btn');
+  if (Date.now() < impArmed) {
+    impArmed = 0;
+    btn.textContent = '导入恢复';
+    btn.classList.remove('danger');
+    $('#imp-file').click();
+    return;
+  }
+  impArmed = Date.now() + 3000;
+  btn.textContent = '再点一次确认导入';
+  btn.classList.add('danger');
+  toast('导入会覆盖当前数据，3 秒内再点一次确认');
+  setTimeout(() => {
+    if (Date.now() >= impArmed) {
+      impArmed = 0;
+      btn.textContent = '导入恢复';
+      btn.classList.remove('danger');
+    }
+  }, 3100);
+});
 $('#imp-file').addEventListener('change', (e) => {
   const f = e.target.files && e.target.files[0];
   if (!f) return;
@@ -1946,12 +1994,15 @@ $('#imp-file').addEventListener('change', (e) => {
     try {
       const j = JSON.parse(rd.result);
       if (j.app !== 'AragonTask' || !Array.isArray(j.tasks)) throw new Error('不是有效的备份文件');
-      if (!confirm('导入将覆盖当前全部数据，确定继续？')) { e.target.value = ''; return; }
       S.tasks = j.tasks;
       S.records = Array.isArray(j.records) ? j.records : [];
       S.memos = Array.isArray(j.memos) ? j.memos : [];
       if (Array.isArray(j.cats) && j.cats.length) S.cats = j.cats;
       S.budget = j.budget && j.budget.monthly ? j.budget : { monthly: null };
+      M.month = todayISO().slice(0, 7);
+      M.filter = 'all';
+      expandedId = null;
+      expandedRid = null;
       persist();
       renderAll();
       closeSheets();
@@ -2012,6 +2063,10 @@ $('#sr-res').addEventListener('click', (e) => {
     }, 80);
   } else if (b.dataset.srk === 'memo') {
     setView('memo');
+    setTimeout(() => {
+      const el = document.querySelector('[data-mid="' + id + '"]');
+      if (el) { el.scrollIntoView({ block: 'center' }); el.classList.add('flash'); setTimeout(() => el.classList.remove('flash'), 1300); }
+    }, 80);
   } else {
     setView('money');
     expandedRid = id;

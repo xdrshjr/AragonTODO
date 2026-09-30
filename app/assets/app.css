@@ -1200,3 +1200,6 @@ body.agent-mode .chat-wrap {
 
 /* F3 repeat badge */
 .rp { color: var(--clay-d); }
+
+/* two-step import confirm */
+.mini-btn.danger { background: var(--danger); color: #fff; }
