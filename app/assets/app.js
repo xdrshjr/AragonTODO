@@ -231,6 +231,7 @@ function mdToHtml(md) {
 
 /* ---------- state ---------- */
 let S = load();
+if (!S.budget) S.budget = { monthly: null };
 let F = { cat: 'all', showDone: false };
 let V = 'hub';
 let M = { month: todayISO().slice(0, 7), filter: 'all' };
@@ -402,6 +403,7 @@ function rowHTML(t, i) {
     (c ? '<i class="mdot" style="background:' + c.color + '"></i><span>' + esc(c.name) + '</span>'
        : '<i class="mdot" style="background:#B5B0A0"></i><span>未分类</span>') +
     (t.due ? '<span class="sep">·</span>' + due : '') +
+    (t.repeat ? '<span class="sep">·</span><span class="rp">↻ ' + repLabel(t.repeat) + '</span>' : '') +
     '</div>';
   const detail =
     '<div class="detail"><div class="detail-in">' +
@@ -479,6 +481,19 @@ function renderMoney() {
   $('#m-month').textContent = y + '年' + m + '月';
   $('#m-out').textContent = fmtAmt(out);
   $('#m-sub').textContent = '收入 ' + fmtAmt(inn) + ' 元 · 结余 ' + (bal >= 0 ? '+' : '-') + fmtAmt(Math.abs(bal)) + ' 元';
+
+  /* budget mini bar */
+  const bud = S.budget && S.budget.monthly;
+  const mini = $('#bud-mini');
+  if (bud && isCur) {
+    mini.hidden = false;
+    const p = out / bud;
+    const f = $('#bud-mini-fill');
+    f.style.width = Math.min(p, 1) * 100 + '%';
+    f.classList.toggle('warn', p >= 0.8 && p < 1);
+    f.classList.toggle('over', p >= 1);
+    mini.title = p >= 1 ? '已超支' : '预算 ' + Math.round(p * 100) + '%';
+  } else mini.hidden = true;
 
   const pend = S.records
     .filter((r) => r.reimb === 'pending' || r.reimb === 'submitted')
@@ -619,6 +634,7 @@ const taskSheet = $('#task-sheet');
 let editingTask = null;
 let selCat = null;
 let selDue = null;
+let selRepeat = null;
 
 function openTaskSheet(t) {
   editingTask = t || null;
@@ -627,9 +643,11 @@ function openTaskSheet(t) {
   $('#ts-note').value = t ? (t.note || '') : '';
   selCat = t ? t.catId : (F.cat !== 'all' ? F.cat : (S.cats[0] ? S.cats[0].id : null));
   selDue = t ? (t.due || null) : null;
+  selRepeat = t ? (t.repeat || null) : null;
   $('#ts-del').hidden = !t;
   renderSheetCats();
   renderSheetDates();
+  renderRepeat();
   refreshSaveBtn();
   openSheet(taskSheet);
   setTimeout(() => { if (!t) $('#ts-title').focus(); }, 380);
@@ -662,15 +680,17 @@ function refreshSaveBtn() {
 function saveTask() {
   const title = $('#ts-title').value.trim();
   if (!title) return;
+  if (selRepeat && !selDue) selDue = todayISO(); /* repeating tasks need a start date */
   const note = $('#ts-note').value.trim();
   if (editingTask) {
     editingTask.title = title;
     editingTask.note = note;
     editingTask.catId = selCat;
     editingTask.due = selDue;
+    editingTask.repeat = selRepeat;
   } else {
     S.tasks.push({
-      id: uid(), title, note, catId: selCat, due: selDue,
+      id: uid(), title, note, catId: selCat, due: selDue, repeat: selRepeat,
       done: false, createdAt: Date.now(), doneAt: null
     });
   }
@@ -1516,6 +1536,14 @@ document.addEventListener('click', (e) => {
       if (!t) return;
       t.done = !t.done;
       t.doneAt = t.done ? Date.now() : null;
+      if (t.done && t.repeat && t.due) {
+        S.tasks.push({
+          id: uid(), title: t.title, note: t.note, catId: t.catId,
+          due: nextDueISO(t.due, t.repeat), repeat: t.repeat,
+          done: false, createdAt: Date.now(), doneAt: null
+        });
+        toast('已完成，「' + t.title + '」已排到 ' + dueLabel(nextDueISO(t.due, t.repeat)));
+      }
       persist();
       renderAll();
       break;
@@ -1768,3 +1796,228 @@ document.addEventListener('keydown', (e) => {
 renderHeader();
 setView('hub');
 setInterval(renderHeader, 60000);
+
+/* ============ v1.6 big features: repeat / stats / budget / backup / search ============ */
+
+/* ---- F3: repeat tasks ---- */
+const REPS = [
+  { v: null, l: '不重复' },
+  { v: 'daily', l: '每天' },
+  { v: 'weekly', l: '每周' },
+  { v: 'monthly', l: '每月' }
+];
+function repLabel(v) {
+  const r = REPS.find((x) => x.v === v);
+  return r ? r.l : '';
+}
+function renderRepeat() {
+  $('#ts-repeat').innerHTML = REPS.map((r) =>
+    '<button class="chip s' + (selRepeat === r.v ? ' sel' : '') + '" data-rp="' + (r.v || '') + '">' + r.l + '</button>').join('');
+}
+function nextDueISO(due, rep) {
+  const d = new Date(due + 'T00:00:00');
+  if (rep === 'daily') d.setDate(d.getDate() + 1);
+  else if (rep === 'weekly') d.setDate(d.getDate() + 7);
+  else if (rep === 'monthly') d.setMonth(d.getMonth() + 1);
+  return fmtISO(d);
+}
+$('#ts-repeat').addEventListener('click', (e) => {
+  const b = e.target.closest('.chip');
+  if (!b) return;
+  selRepeat = b.dataset.rp || null;
+  renderRepeat();
+});
+
+/* ---- F1: stats report ---- */
+function openStats() {
+  renderStats();
+  openSheet($('#stats-sheet'));
+}
+$('#stats-btn').addEventListener('click', openStats);
+
+function stMonths6() {
+  const arr = [];
+  const base = new Date();
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(base.getFullYear(), base.getMonth() - i, 1);
+    arr.push(fmtISO(d).slice(0, 7));
+  }
+  return arr;
+}
+function renderStats() {
+  const rs = monthRecords();
+  const out = rs.filter((r) => r.type === 'out').reduce((a, r) => a + (r.amount || 0), 0);
+  const inn = rs.filter((r) => r.type === 'in').reduce((a, r) => a + (r.amount || 0), 0);
+  const bal = inn - out;
+  $('#st-out').textContent = '−' + fmtAmt(out);
+  $('#st-in').textContent = '+' + fmtAmt(inn);
+  $('#st-bal').textContent = (bal >= 0 ? '+' : '−') + fmtAmt(Math.abs(bal));
+
+  /* category bars */
+  const byCat = {};
+  rs.filter((r) => r.type === 'out').forEach((r) => {
+    const k = r.cat || 'other';
+    byCat[k] = (byCat[k] || 0) + (r.amount || 0);
+  });
+  const arr = Object.entries(byCat).sort((a, b) => b[1] - a[1]).slice(0, 8);
+  const max = arr.length ? arr[0][1] : 0;
+  $('#st-cats').innerHTML = arr.length ? arr.map(([k, v]) => {
+    const c = RCATS.find((x) => x.k === k);
+    const col = c ? c.c : '#B5B0A0';
+    return '<div class="st-brow"><span class="st-bl">' + esc(c ? c.n : '其他') + '</span>' +
+      '<div class="st-btrack"><div class="st-bfill" style="width:' + Math.max(4, (v / max) * 100) + '%;background:' + col + '"></div></div>' +
+      '<span class="st-bv">' + fmtAmt(v) + '</span></div>';
+  }).join('') : '<div class="st-none">本月暂无支出</div>';
+
+  /* 6-month trend */
+  const months = stMonths6();
+  const sums = months.map((m) => S.records
+    .filter((r) => (r.date || '').slice(0, 7) === m && r.type === 'out')
+    .reduce((a, r) => a + (r.amount || 0), 0));
+  const mx = Math.max.apply(null, sums.concat([1]));
+  const pts = sums.map((v, i) =>
+    (i * (320 / 5)).toFixed(1) + ',' + (84 - (v / mx) * 72 + 3).toFixed(1)).join(' ');
+  $('#st-svg').innerHTML =
+    '<polyline points="' + pts + '" fill="none" stroke="#CC785C" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"/>' +
+    sums.map((v, i) => '<circle cx="' + (i * (320 / 5)).toFixed(1) + '" cy="' + (84 - (v / mx) * 72 + 3).toFixed(1) + '" r="3" fill="#CC785C"/>').join('');
+  $('#st-months').innerHTML = months.map((m) => '<span>' + m.slice(5).replace('-', '/') + '</span>').join('');
+
+  /* budget */
+  const b = S.budget && S.budget.monthly;
+  $('#bud-in').value = b || '';
+  updateBudgetUI(out);
+}
+function updateBudgetUI(out) {
+  const b = S.budget && S.budget.monthly;
+  const bar = $('#bud-bar'), fill = $('#bud-fill'), tip = $('#bud-tip');
+  if (!b) { bar.hidden = true; tip.textContent = '设置后会在账本页显示进度条'; return; }
+  bar.hidden = false;
+  const p = out / b;
+  fill.style.width = Math.min(p, 1) * 100 + '%';
+  fill.classList.toggle('warn', p >= 0.8 && p < 1);
+  fill.classList.toggle('over', p >= 1);
+  tip.textContent = p >= 1
+    ? '已超支 ' + fmtAmt(out - b) + ' 元'
+    : '已用 ' + Math.round(p * 100) + '% · 剩余 ' + fmtAmt(b - out) + ' 元';
+}
+$('#bud-save').addEventListener('click', () => {
+  const v = parseFloat($('#bud-in').value);
+  S.budget = { monthly: v > 0 ? Math.round(v * 100) / 100 : null };
+  persist();
+  renderStats();
+  renderMoney();
+  toast(S.budget.monthly ? '月度预算已设为 ' + fmtAmt(S.budget.monthly) + ' 元' : '预算已关闭');
+});
+
+/* ---- F2: backup & restore ---- */
+$('#exp-btn').addEventListener('click', async () => {
+  const data = {
+    app: 'AragonTask', v: 2, exportedAt: new Date().toISOString(),
+    tasks: S.tasks, records: S.records, memos: S.memos, cats: S.cats, budget: S.budget
+  };
+  const json = JSON.stringify(data);
+  let copied = false;
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      await navigator.clipboard.writeText(json);
+      copied = true;
+    }
+  } catch (e) { /* clipboard unavailable on some WebViews */ }
+  try {
+    const url = URL.createObjectURL(new Blob([json], { type: 'application/json' }));
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'aragontask-backup-' + todayISO() + '.json';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 3000);
+    toast(copied ? '备份已下载，并复制到剪贴板' : '备份文件已下载');
+  } catch (e) {
+    toast(copied ? '备份已复制到剪贴板' : '导出失败：' + e.message);
+  }
+});
+$('#imp-btn').addEventListener('click', () => $('#imp-file').click());
+$('#imp-file').addEventListener('change', (e) => {
+  const f = e.target.files && e.target.files[0];
+  if (!f) return;
+  const rd = new FileReader();
+  rd.onload = () => {
+    try {
+      const j = JSON.parse(rd.result);
+      if (j.app !== 'AragonTask' || !Array.isArray(j.tasks)) throw new Error('不是有效的备份文件');
+      if (!confirm('导入将覆盖当前全部数据，确定继续？')) { e.target.value = ''; return; }
+      S.tasks = j.tasks;
+      S.records = Array.isArray(j.records) ? j.records : [];
+      S.memos = Array.isArray(j.memos) ? j.memos : [];
+      if (Array.isArray(j.cats) && j.cats.length) S.cats = j.cats;
+      S.budget = j.budget && j.budget.monthly ? j.budget : { monthly: null };
+      persist();
+      renderAll();
+      closeSheets();
+      toast('导入完成：' + S.tasks.length + ' 任务 · ' + S.records.length + ' 账目 · ' + S.memos.length + ' 备忘');
+    } catch (err) {
+      toast('导入失败：' + err.message);
+    }
+    e.target.value = '';
+  };
+  rd.readAsText(f);
+});
+
+/* ---- F4: global search ---- */
+$('#sr-open').addEventListener('click', () => {
+  openSheet($('#search-sheet'));
+  const i = $('#sr-in');
+  i.value = '';
+  $('#sr-res').innerHTML = '<div class="st-none">输入关键词试试</div>';
+  setTimeout(() => i.focus(), 380);
+});
+let srTimer = 0;
+function srRender(q) {
+  q = q.trim().toLowerCase();
+  const box = $('#sr-res');
+  if (!q) { box.innerHTML = '<div class="st-none">输入关键词试试</div>'; return; }
+  const hit = (s) => String(s || '').toLowerCase().indexOf(q) >= 0;
+  const ts = S.tasks.filter((t) => hit(t.title) || hit(t.note)).slice(0, 8);
+  const ms = S.memos.filter((m) => hit(m.title) || hit(m.note) || hit(m.catName)).slice(0, 8);
+  const rc = S.records.filter((r) => hit(r.title) || hit(fmtAmt(r.amount))).slice(0, 8);
+  let h = '';
+  if (ts.length) h += '<div class="lb">待办</div>' + ts.map((t) =>
+    '<button class="sr-item" data-srk="task" data-id="' + t.id + '"><i class="mdot" style="background:' + (t.done ? '#B5B0A0' : '#CC785C') + '"></i><span>' + esc(t.title) + '</span></button>').join('');
+  if (ms.length) h += '<div class="lb">备忘</div>' + ms.map((m) =>
+    '<button class="sr-item" data-srk="memo" data-id="' + m.id + '"><i class="mdot" style="background:#D4A27F"></i><span>' + esc(m.title) + '</span></button>').join('');
+  if (rc.length) h += '<div class="lb">账目</div>' + rc.map((r) => {
+    const c = RCATS.find((x) => x.k === r.cat);
+    return '<button class="sr-item" data-srk="rec" data-id="' + r.id + '"><i class="mdot" style="background:' + ((c || {}).c || '#B5B0A0') + '"></i><span>' +
+      esc(r.title || '账目') + '　' + (r.type === 'out' ? '−' : '+') + fmtAmt(r.amount) + '</span></button>';
+  }).join('');
+  box.innerHTML = h || '<div class="st-none">没有找到与「' + esc(q) + '」相关的内容</div>';
+}
+$('#sr-in').addEventListener('input', (e) => {
+  clearTimeout(srTimer);
+  srTimer = setTimeout(() => srRender(e.target.value), 120);
+});
+$('#sr-res').addEventListener('click', (e) => {
+  const b = e.target.closest('.sr-item');
+  if (!b) return;
+  const id = b.dataset.id;
+  closeSheets();
+  if (b.dataset.srk === 'task') {
+    setView('todo');
+    expandedId = id;
+    renderList();
+    setTimeout(() => {
+      const el = document.querySelector('.row[data-id="' + id + '"]');
+      if (el) { el.scrollIntoView({ block: 'center' }); el.classList.add('flash'); setTimeout(() => el.classList.remove('flash'), 1300); }
+    }, 80);
+  } else if (b.dataset.srk === 'memo') {
+    setView('memo');
+  } else {
+    setView('money');
+    expandedRid = id;
+    setTimeout(() => {
+      const el = document.querySelector('.m-row [data-id="' + id + '"]');
+      if (el) { const row = el.closest('.m-row'); row.scrollIntoView({ block: 'center' }); row.classList.add('flash'); setTimeout(() => row.classList.remove('flash'), 1300); }
+    }, 80);
+  }
+});

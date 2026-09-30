@@ -1134,3 +1134,69 @@ body.agent-mode .chat-wrap {
   margin-left: 2px;
   vertical-align: 1px;
 }
+
+/* ============ v1.6: big features styles ============ */
+/* F1 stats */
+.st-mrow { display: flex; }
+.st-mc { flex: 1; text-align: center; }
+.st-mc:first-child { text-align: left; }
+.st-mc:last-child { text-align: right; }
+.lb2 { font-size: 11px; color: var(--mut2); letter-spacing: .04em; margin-bottom: 3px; }
+.st-neg { font-size: 19px; font-weight: 700; color: var(--ink); font-variant-numeric: tabular-nums; }
+.st-pos { font-size: 19px; font-weight: 700; color: var(--green, #6A8E5F); font-variant-numeric: tabular-nums; }
+.st-bal { font-size: 19px; font-weight: 700; color: var(--clay-d); font-variant-numeric: tabular-nums; }
+.st-bars { padding: 14px 16px; }
+.st-brow { display: flex; align-items: center; gap: 10px; margin: 9px 0; }
+.st-bl { width: 52px; flex: none; font-size: 12.5px; color: var(--mut); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.st-btrack { flex: 1; height: 10px; border-radius: 999px; background: var(--line2, #EDE7DA); overflow: hidden; }
+.st-bfill { height: 100%; border-radius: 999px; min-width: 6px; }
+.st-bv { width: 62px; flex: none; text-align: right; font-size: 12.5px; font-variant-numeric: tabular-nums; color: var(--ink); }
+.st-trend { padding: 14px 16px 8px; }
+.st-trend svg { width: 100%; height: 90px; display: block; }
+.st-months { display: flex; justify-content: space-between; margin-top: 6px; }
+.st-months span { font-size: 10.5px; color: var(--mut2); width: 40px; text-align: center; }
+.st-none { padding: 18px 0; text-align: center; font-size: 13px; color: var(--mut2); }
+.st-budget { padding: 14px 16px; }
+.bud-row { display: flex; gap: 10px; }
+.bud-row .f-in { flex: 1; min-width: 0; }
+.bud-bar { height: 10px; border-radius: 999px; background: var(--line2, #EDE7DA); overflow: hidden; margin-top: 12px; }
+.bud-fill { height: 100%; background: var(--green, #6A8E5F); border-radius: 999px; transition: width .35s ease; }
+.bud-fill.warn { background: #C69A4D; }
+.bud-fill.over { background: var(--danger); }
+.bud-tip { margin-top: 8px; font-size: 12px; color: var(--mut); }
+.st-data { padding: 14px 16px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.st-data .cs-tip { flex-basis: 100%; margin-top: 4px; }
+
+/* money hero: budget mini bar + stats btn */
+.m-hero-side { display: flex; flex-direction: column; gap: 10px; align-items: flex-end; }
+.bud-mini { height: 6px; width: 100%; border-radius: 999px; background: var(--line2, #EDE7DA); overflow: hidden; margin-top: 10px; }
+.bud-mini .bud-fill { background: var(--green, #6A8E5F); }
+.bud-mini .bud-fill.warn { background: #C69A4D; }
+.bud-mini .bud-fill.over { background: var(--danger); }
+.stats-btn {
+  width: 40px; height: 40px; border: 1px solid var(--line2); background: var(--card2, #FBF7EE);
+  border-radius: 12px; color: var(--clay-d); display: flex; align-items: center; justify-content: center; cursor: pointer;
+}
+.stats-btn svg { width: 17px; height: 17px; }
+
+/* F4 search */
+.hub-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+.hub-brand { font-size: 20px; letter-spacing: -.02em; font-family: 'Source Serif 4', Georgia, serif; }
+.sr-bar { display: flex; align-items: center; gap: 10px; border: 1px solid var(--line2); background: var(--card2, #FBF7EE); border-radius: 14px; padding: 4px 14px; }
+.sr-bar svg { width: 16px; height: 16px; color: var(--mut2); flex: none; }
+.sr-bar input { flex: 1; min-width: 0; border: 0; background: none; padding: 12px 0; font-size: 15px; color: var(--ink); outline: 0; font-family: inherit; }
+.sr-bar input::placeholder { color: var(--mut2); }
+.sr-res { margin-top: 14px; max-height: 56vh; overflow-y: auto; }
+.sr-item {
+  display: flex; align-items: center; gap: 10px; width: 100%; text-align: left;
+  border: 0; background: none; padding: 13px 6px; font-size: 14px; color: var(--ink);
+  border-bottom: 1px solid var(--line, #F0EADD); cursor: pointer; font-family: inherit;
+}
+.sr-item:active { background: var(--card2, #FBF7EE); }
+
+/* flash highlight for search jump */
+.row.flash { animation: rowflash 1.2s ease; }
+@keyframes rowflash { 0%, 60% { background: rgba(204, 120, 92, .14); } 100% { background: transparent; } }
+
+/* F3 repeat badge */
+.rp { color: var(--clay-d); }

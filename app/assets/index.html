@@ -31,6 +31,12 @@
 
   <!-- ================= HUB ================= -->
   <div id="view-hub">
+    <div class="hub-top">
+      <b class="hub-brand">AragonTask</b>
+      <button class="icon-btn sr-open" id="sr-open" aria-label="搜索">
+        <svg viewBox="0 0 18 18" fill="none"><circle cx="8" cy="8" r="5.4" stroke="currentColor" stroke-width="1.8"/><path d="M12.2 12.2L16 16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      </button>
+    </div>
     <button class="hub-hero card" data-act="view" data-id="agent">
       <div class="hh-ic">
         <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -145,11 +151,17 @@
         <div class="ht-label" id="m-lb">本月支出</div>
         <div class="mh-num"><span id="m-out">0</span><span class="mh-cur">元</span></div>
         <div class="ht-sub" id="m-sub"></div>
+        <div class="bud-mini" id="bud-mini" hidden><div class="bud-fill" id="bud-mini-fill"></div></div>
       </div>
-      <button class="reimb-chip" id="reimb-chip" data-act="mreimb">
-        <span class="rc-l">待报销</span>
-        <span class="rc-v" id="reimb-sum">¥0</span>
-      </button>
+      <div class="m-hero-side">
+        <button class="reimb-chip" id="reimb-chip" data-act="mreimb">
+          <span class="rc-l">待报销</span>
+          <span class="rc-v" id="reimb-sum">¥0</span>
+        </button>
+        <button class="stats-btn" id="stats-btn" aria-label="统计与数据">
+          <svg viewBox="0 0 18 18" fill="none"><path d="M3 15V9M9 15V3M15 15v-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        </button>
+      </div>
     </section>
 
     <div class="m-nav">
@@ -238,6 +250,8 @@
   <div class="chips-in" id="ts-cats"></div>
   <div class="lb">日期</div>
   <div class="chips-in" id="ts-dates"></div>
+  <div class="lb" style="margin-top:14px">重复</div>
+  <div class="chips-in" id="ts-repeat"></div>
   <input type="date" id="ts-date-input" class="dpick" tabindex="-1">
   <button class="save" id="ts-save" disabled>保存</button>
   <button class="ghost-del" id="ts-del" hidden>删除此任务</button>
@@ -328,6 +342,49 @@
   <button class="save" id="cs-save" disabled>添加</button>
   <button class="ghost-del" id="cs-del" hidden>删除此分类</button>
   <div class="cs-tip" id="cs-tip">删除分类后，其中的任务会归入「未分类」</div>
+</section>
+
+<!-- stats sheet (F1 report + F5 budget + F2 backup) -->
+<section class="sheet" id="stats-sheet" aria-hidden="true">
+  <div class="grab"></div>
+  <h2 class="sh">统计与数据</h2>
+  <div class="st-month card">
+    <div class="st-mrow">
+      <div class="st-mc"><div class="lb2">支出</div><div class="st-neg" id="st-out">0</div></div>
+      <div class="st-mc"><div class="lb2">收入</div><div class="st-pos" id="st-in">0</div></div>
+      <div class="st-mc"><div class="lb2">结余</div><div class="st-bal" id="st-bal">0</div></div>
+    </div>
+  </div>
+  <div class="lb" style="margin-top:18px">分类占比（本月支出）</div>
+  <div class="st-bars card" id="st-cats"><div class="st-none">暂无支出</div></div>
+  <div class="lb" style="margin-top:18px">近 6 个月支出趋势</div>
+  <div class="st-trend card"><svg id="st-svg" viewBox="0 0 320 90" preserveAspectRatio="none"></svg><div class="st-months" id="st-months"></div></div>
+  <div class="lb" style="margin-top:18px">月度预算</div>
+  <div class="st-budget card">
+    <div class="bud-row">
+      <input class="f-in" id="bud-in" type="text" inputmode="numeric" placeholder="如 3000（留空关闭）">
+      <button class="save" id="bud-save">保存</button>
+    </div>
+    <div class="bud-bar" id="bud-bar" hidden><div class="bud-fill" id="bud-fill"></div></div>
+    <div class="bud-tip" id="bud-tip"></div>
+  </div>
+  <div class="lb" style="margin-top:18px">数据管理</div>
+  <div class="st-data card">
+    <button class="mini-btn" id="exp-btn">导出备份</button>
+    <button class="mini-btn" id="imp-btn">导入恢复</button>
+    <input type="file" id="imp-file" accept="application/json,.json" hidden>
+    <div class="cs-tip">导出包含待办、账目、备忘与分类（不含 AI 密钥）。导入会覆盖当前数据，请先导出留底。</div>
+  </div>
+</section>
+
+<!-- search sheet (F4) -->
+<section class="sheet" id="search-sheet" aria-hidden="true">
+  <div class="grab"></div>
+  <div class="sr-bar">
+    <svg viewBox="0 0 18 18" fill="none" aria-hidden="true"><circle cx="8" cy="8" r="5.4" stroke="currentColor" stroke-width="1.8"/><path d="M12.2 12.2L16 16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    <input id="sr-in" placeholder="搜索待办、备忘、账目…" autocomplete="off">
+  </div>
+  <div class="sr-res" id="sr-res"><div class="st-none">输入关键词试试</div></div>
 </section>
 
 <div class="toast" id="toast"><span id="toast-msg"></span><button id="toast-un" hidden>撤销</button></div>

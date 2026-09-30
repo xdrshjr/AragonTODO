@@ -14,7 +14,7 @@ echo "[2/7] aapt2 link"
 "$BT/aapt2" link -o build/base.apk -I "$PLAT" \
   --manifest AndroidManifest.xml \
   --min-sdk-version 24 --target-sdk-version 34 \
-  --version-code 6 --version-name 1.5 \
+  --version-code 7 --version-name 1.6 \
   -A assets --java build/gen build/res.zip
 
 echo "[3/7] javac"
@@ -44,7 +44,7 @@ if [ ! -f ../terra.keystore ]; then
   echo "  keystore created"
 fi
 "$BT/apksigner" sign --ks ../terra.keystore --ks-pass pass:terra2024 --key-pass pass:terra2024 \
-  --out ../AragonTask-v1.5.apk build/aligned.apk
+  --out ../AragonTask-v1.6.apk build/aligned.apk
 
-"$BT/apksigner" verify --print-certs ../AragonTask-v1.5.apk | head -4
-echo "BUILD_OK -> $(cd .. && pwd)/AragonTask-v1.5.apk"
+"$BT/apksigner" verify --print-certs ../AragonTask-v1.6.apk | head -4
+echo "BUILD_OK -> $(cd .. && pwd)/AragonTask-v1.6.apk"
