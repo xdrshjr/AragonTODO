@@ -92,6 +92,12 @@
       <b>待办任务</b>
     </div>
 
+    <div class="qa card">
+      <svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      <input id="qa-in" placeholder="快速添加任务，回车保存" maxlength="120" autocomplete="off">
+      <button class="qa-chip" id="qa-today" aria-label="默认记到今天">今天</button>
+    </div>
+
     <section class="hero card">
       <svg class="ring" viewBox="0 0 62 62" aria-hidden="true">
         <circle class="ring-bg" cx="31" cy="31" r="26"/>
@@ -112,6 +118,7 @@
     <div class="empty" id="empty" hidden>
       <h3 id="empty-t">一切安好</h3>
       <p id="empty-p"></p>
+      <button class="empty-cta" id="empty-cta">添加第一个任务</button>
     </div>
 
     <div class="sec sec-btn-wrap">
@@ -160,6 +167,7 @@
     <div class="empty" id="m-empty" hidden>
       <h3 id="m-empty-t">还没有账目</h3>
       <p id="m-empty-p">记下第一笔，看看钱都去哪儿了。</p>
+      <button class="empty-cta" id="m-empty-cta">记第一笔</button>
     </div>
 
     <div id="m-groups"></div>
@@ -199,7 +207,7 @@
     <div class="chat-wrap">
       <div class="chat-scroll" id="chat"></div>
       <div class="composer">
-        <input id="chat-in" placeholder="让智能体记事、记账、查资料…" maxlength="500" autocomplete="off">
+        <textarea id="chat-in" placeholder="让智能体记事、记账、查资料…" maxlength="500" rows="1" autocomplete="off"></textarea>
         <button class="send-b" id="chat-send" aria-label="发送">
           <svg viewBox="0 0 20 20" fill="none"><path d="M10 16V4M5 9l5-5 5 5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </button>
@@ -288,7 +296,12 @@
     <button class="ts-b" data-act="aistyle" data-id="custom">自定义</button>
   </div>
   <input class="f-in" id="ai-url" placeholder="API 地址" autocomplete="off" inputmode="url">
-  <input class="f-in" id="ai-key" type="password" placeholder="API Key（凭证）" autocomplete="off">
+  <div class="key-row">
+    <input class="f-in" id="ai-key" type="password" placeholder="API Key（凭证）" autocomplete="off">
+    <button class="eye" id="ai-eye" aria-label="显示密钥">
+      <svg viewBox="0 0 20 20" fill="none"><path d="M2.5 10S5.8 4.8 10 4.8 17.5 10 17.5 10 14.2 15.2 10 15.2 2.5 10 2.5 10z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><circle cx="10" cy="10" r="2.4" stroke="currentColor" stroke-width="1.6"/></svg>
+    </button>
+  </div>
   <div class="lb">模型</div>
   <div class="model-row">
     <input class="f-in" id="ai-model" placeholder="模型名" autocomplete="off" style="flex:1">

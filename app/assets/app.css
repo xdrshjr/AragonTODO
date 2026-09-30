@@ -776,7 +776,7 @@ footer {
   align-items: center;
   padding: 12px 0 4px;
 }
-.composer input {
+.composer input, .composer textarea {
   flex: 1;
   min-width: 0;
   border: 1px solid var(--line2);
@@ -787,9 +787,14 @@ footer {
   color: var(--ink);
   outline: 0;
   transition: border-color .2s ease;
+  font-family: inherit;
+  line-height: 1.45;
+  resize: none;
+  overflow-y: auto;
+  max-height: 120px;
 }
-.composer input::placeholder { color: var(--mut2); }
-.composer input:focus { border-color: var(--clay); }
+.composer input::placeholder, .composer textarea::placeholder { color: var(--mut2); }
+.composer input:focus, .composer textarea:focus { border-color: var(--clay); }
 .send-b {
   width: 44px;
   height: 44px;
@@ -1043,3 +1048,89 @@ body.agent-mode .chat-wrap {
 
 
 
+
+/* ============ v1.5: UX improvements ============ */
+/* R6 quick-add bar */
+.qa {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 8px 6px 16px;
+  margin-bottom: 14px;
+}
+.qa svg { width: 15px; height: 15px; color: var(--clay); flex: none; }
+.qa input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: none;
+  font-size: 14.5px;
+  color: var(--ink);
+  outline: 0;
+  padding: 12px 0;
+  font-family: inherit;
+}
+.qa input::placeholder { color: var(--mut2); }
+.qa-chip {
+  flex: none;
+  border: 1px solid var(--line2);
+  background: var(--card2);
+  color: var(--mut);
+  border-radius: 999px;
+  font-size: 12px;
+  padding: 7px 13px;
+  font-family: inherit;
+  cursor: pointer;
+}
+.qa-chip.sel { background: var(--clay); border-color: var(--clay); color: #fff; }
+
+/* R10 empty-state CTA */
+.empty-cta {
+  margin-top: 14px;
+  border: 0;
+  background: var(--clay);
+  color: #fff;
+  border-radius: 999px;
+  font-size: 13.5px;
+  padding: 11px 22px;
+  font-family: inherit;
+  cursor: pointer;
+}
+.empty-cta:active { transform: scale(.96); }
+
+/* R9 key visibility */
+.key-row { display: flex; gap: 8px; align-items: center; }
+.key-row .f-in { flex: 1; min-width: 0; }
+.eye {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--line2);
+  background: var(--card2);
+  border-radius: 12px;
+  color: var(--mut);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.eye svg { width: 17px; height: 17px; }
+.eye.on { color: var(--clay); border-color: var(--clay); }
+
+/* R3 larger hit targets (visual size unchanged) */
+.cbx { position: relative; }
+.cbx::after { content: ''; position: absolute; inset: -11px; }
+.act-ed, .act-del { position: relative; }
+.act-ed::after, .act-del::after { content: ''; position: absolute; inset: -9px -13px; }
+
+/* R7 overdue badge on hub card */
+.odv {
+  display: inline-block;
+  background: rgba(191, 68, 55, .12);
+  color: var(--danger);
+  border-radius: 999px;
+  font-size: 11px;
+  padding: 2px 8px;
+  margin-left: 2px;
+  vertical-align: 1px;
+}

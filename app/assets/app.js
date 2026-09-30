@@ -334,7 +334,9 @@ function renderHub() {
   const t = todayISO();
   const pendToday = S.tasks.filter((x) => !x.done && x.due && x.due <= t).length;
   const pendAll = S.tasks.filter((x) => !x.done).length;
-  $('#hub-todo').textContent = pendToday ? '今天 ' + pendToday + ' 项待办' : (pendAll ? pendAll + ' 项待办' : '全部完成');
+  const overdue = S.tasks.filter((x) => !x.done && x.due && daysDiff(x.due) < 0).length;
+  $('#hub-todo').innerHTML = (pendToday ? '今天 ' + pendToday + ' 项待办' : (pendAll ? pendAll + ' 项待办' : '全部完成')) +
+    (overdue ? ' <span class="odv">' + overdue + ' 项逾期</span>' : '');
   const mo = S.records.filter((r) => (r.date || '').slice(0, 7) === todayISO().slice(0, 7) && r.type === 'out')
     .reduce((a, r) => a + (r.amount || 0), 0);
   $('#hub-money').textContent = '本月支出 ¥' + fmtAmt(mo);
@@ -674,6 +676,7 @@ function saveTask() {
   }
   persist();
   renderAll();
+  toast(editingTask ? '任务已更新' : '已添加「' + title + '」');
   closeSheets();
 }
 
@@ -714,6 +717,7 @@ function openRecSheet(r) {
   renderRDates();
   refreshRSBtn();
   openSheet(recSheet);
+  setTimeout(() => { const a = $('#rs-amt'); a.focus(); if (r) a.select(); }, 380);
   setTimeout(() => { if (!r) $('#rs-amt').focus(); }, 380);
 }
 function mDefaultCat() {
@@ -749,12 +753,18 @@ function renderRDates() {
   $('#rs-dates').innerHTML = h;
 }
 function refreshRSBtn() {
-  const a = parseFloat($('#rs-amt').value);
-  $('#rs-save').disabled = !(a > 0);
+  /* keep the button clickable: saveRec validates and explains with a toast
+     (a silently disabled button gives the user no reason why) */
+  $('#rs-save').disabled = false;
 }
 function saveRec() {
   const amount = Math.round(parseFloat($('#rs-amt').value) * 100) / 100;
-  if (!(amount > 0)) return;
+  if (!(amount > 0)) {
+    toast('请先输入有效金额');
+    const a = $('#rs-amt');
+    a.focus(); a.select();
+    return;
+  }
   const title = $('#rs-title').value.trim();
   const catName = selRType === 'out' ? ((RCATS.find((c) => c.k === selRCat) || {}).n || '') : '收入';
   const reimb = (selRType === 'out' && $('#rs-reimb').checked) ? 'pending' : 'none';
@@ -779,6 +789,7 @@ function saveRec() {
   if (selRDate && selRDate.slice(0, 7) !== M.month) M.month = selRDate.slice(0, 7);
   persist();
   renderAll();
+  toast((editingRec ? '已更新 ' : '已记 ') + (selRType === 'out' ? '−' : '+') + fmtAmt(amount));
   closeSheets();
 }
 function deleteRec(id) {
@@ -1238,15 +1249,18 @@ async function sendChat() {
   const v = inp.value.trim();
   if (!v || chatBusy) return;
   inp.value = '';
+  inp.style.height = 'auto';
   S.chat.push({ role: 'user', text: v, ts: Date.now() });
   persist();
   chatBusy = true;
+  refreshSend();
   renderChat();
   await agentTurn(v);
   chatBusy = false;
   persist();
   renderChat();
   renderAll();
+  refreshSend();
 }
 
 /* ---------- memo view ---------- */
@@ -1296,6 +1310,7 @@ function saveMM() {
   });
   persist();
   renderAll();
+  toast('备忘已保存');
   closeSheets();
 }
 function deleteMemo(id) {
@@ -1663,8 +1678,50 @@ $('#toast-un').addEventListener('click', () => {
   $('#toast').classList.remove('on');
 });
 $('#chat-send').addEventListener('click', sendChat);
-$('#chat-in').addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') { e.preventDefault(); sendChat(); }
+const chatIn = $('#chat-in');
+function refreshSend() { $('#chat-send').disabled = !chatIn.value.trim() || chatBusy; }
+chatIn.addEventListener('input', () => {
+  chatIn.style.height = 'auto';
+  chatIn.style.height = Math.min(chatIn.scrollHeight, 120) + 'px';
+  refreshSend();
+});
+chatIn.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); sendChat(); }
+});
+
+/* quick add bar (todo) */
+let qaDueToday = true;
+$('#qa-today').addEventListener('click', () => {
+  qaDueToday = !qaDueToday;
+  $('#qa-today').classList.toggle('sel', qaDueToday);
+});
+$('#qa-in').addEventListener('keydown', (e) => {
+  if (e.key !== 'Enter' || e.isComposing) return;
+  const v = e.target.value.trim();
+  if (!v) return;
+  S.tasks.push({
+    id: uid(), title: v, note: '',
+    catId: F.cat !== 'all' ? F.cat : (S.cats[0] ? S.cats[0].id : null),
+    due: qaDueToday ? todayISO() : null,
+    done: false, createdAt: Date.now(), doneAt: null
+  });
+  persist();
+  renderAll();
+  e.target.value = '';
+  toast('已添加「' + v + '」');
+});
+
+/* empty-state CTAs */
+$('#empty-cta').addEventListener('click', () => openTaskSheet(null));
+$('#m-empty-cta').addEventListener('click', () => openRecSheet(null));
+
+/* API key visibility toggle */
+$('#ai-eye').addEventListener('click', () => {
+  const k = $('#ai-key');
+  const show = k.type === 'password';
+  k.type = show ? 'text' : 'password';
+  $('#ai-eye').setAttribute('aria-label', show ? '隐藏密钥' : '显示密钥');
+  $('#ai-eye').classList.toggle('on', show);
 });
 $('#ai-save').addEventListener('click', saveAI);
 $('#ai-def').addEventListener('click', () => {
