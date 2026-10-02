@@ -171,6 +171,16 @@ public class MainActivity extends Activity {
             }).start();
         }
 
+        /** Exit the app (called after hardware back resolves to root). */
+        @JavascriptInterface
+        public void exitApp() {
+            runOnUiThread(new Runnable() {
+                public void run() {
+                    finish();
+                }
+            });
+        }
+
         /** Open a url with the system browser. */
         @JavascriptInterface
         public void openUrl(final String u) {
@@ -204,8 +214,9 @@ public class MainActivity extends Activity {
 
     @Override
     public void onBackPressed() {
-        if (web != null && web.canGoBack()) {
-            web.goBack();
+        if (web != null) {
+            /* delegate to the page: close sheet > back to hub > exit */
+            web.evaluateJavascript("window.__back && window.__back()", null);
         } else {
             super.onBackPressed();
         }

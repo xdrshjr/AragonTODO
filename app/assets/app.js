@@ -1509,7 +1509,7 @@ function openSheet(el) {
 }
 function closeSheets() {
   $('#scrim').classList.remove('on');
-  [taskSheet, recSheet, catSheet, aiSheet, mmSheet].forEach((el) => {
+  document.querySelectorAll('.sheet.on').forEach((el) => {
     el.classList.remove('on');
     el.setAttribute('aria-hidden', 'true');
   });
@@ -2016,6 +2016,19 @@ $('#imp-file').addEventListener('change', (e) => {
 });
 
 /* ---- F4: global search ---- */
+/* every sheet can be pulled back: tapping the grab handle closes it */
+document.addEventListener('click', (e) => {
+  if (e.target.closest('.grab')) closeSheets();
+});
+
+/* hardware back: close sheet > return to hub > exit app */
+window.__back = function () {
+  const open = document.querySelector('.sheet.on');
+  if (open) { closeSheets(); return; }
+  if (V !== 'hub') { setView('hub'); return; }
+  if (window.AndroidNet && AndroidNet.exitApp) AndroidNet.exitApp();
+};
+
 $('#sr-open').addEventListener('click', () => {
   openSheet($('#search-sheet'));
   const i = $('#sr-in');
