@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AragonTask — Offline-first todos, ledger & memos for Android</title>
+<meta name="description" content="A local-first Android app: todos, expense ledger and memos in one calm app, with an optional BYO-key AI agent. No accounts, no cloud, no ads.">
+<meta property="og:title" content="AragonTask — Offline-first todos, ledger & memos">
+<meta property="og:description" content="No accounts · no cloud sync · no ads. Your data stays on your device. Optional AI agent with your own API key.">
+<meta property="og:image" content="https://raw.githubusercontent.com/xdrshjr/AragonTODO/master/screenshots/hub.png">
+<style>
+:root{--bg:#F0EEE6;--card:#FCFBF7;--ink:#1F1E1B;--mut:#8B8677;--line:#E4E0D2;--acc:#CC785C}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:16px/1.65 Inter,system-ui,-apple-system,"Segoe UI",sans-serif}
+.wrap{max-width:960px;margin:0 auto;padding:48px 24px}
+h1,h2,h3{font-family:Georgia,"Times New Roman",'Source Serif 4',serif;font-weight:600;line-height:1.2}
+.badge{display:inline-block;background:var(--acc);color:#fff;font-size:12px;padding:3px 12px;border-radius:99px;letter-spacing:.4px;margin-bottom:18px}
+h1{font-size:clamp(34px,5vw,52px);margin-bottom:16px}
+.sub{color:var(--mut);font-size:19px;max-width:640px;margin-bottom:14px}
+.cn{color:var(--mut);font-size:15px;margin-bottom:30px}
+.btns{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:56px}
+.btn{display:inline-block;padding:12px 26px;border-radius:14px;text-decoration:none;font-weight:600;font-size:15px;transition:transform .15s}
+.btn:hover{transform:translateY(-1px)}
+.btn-p{background:var(--acc);color:#fff}
+.btn-s{background:var(--card);color:var(--ink);border:1px solid var(--line)}
+.shots{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:64px}
+.shots img{width:100%;border-radius:18px;border:1px solid var(--line);box-shadow:0 8px 28px rgba(31,30,27,.08)}
+.shots figure{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:10px}
+.shots figcaption{text-align:center;color:var(--mut);font-size:13px;padding:8px 0 4px}
+.feat{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:18px;margin-bottom:64px}
+.f{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:24px}
+.f h3{font-size:18px;margin:10px 0 8px}
+.f p{color:var(--mut);font-size:14.5px}
+.ico{font-size:26px}
+.pledge{background:var(--ink);color:var(--bg);border-radius:22px;padding:34px;margin-bottom:48px}
+.pledge h2{font-size:24px;margin-bottom:10px}
+.pledge p{opacity:.85;font-size:15px}
+footer{color:var(--mut);font-size:14px;border-top:1px solid var(--line);padding-top:24px}
+footer a{color:var(--acc);text-decoration:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <span class="badge">FREE · OPEN SOURCE · ANDROID 7.0+</span>
+  <h1>Your life, on your device.</h1>
+  <p class="sub">AragonTask is a local-first Android app that combines <b>todos</b>, an <b>expense ledger</b>, and <b>memos</b> in one calm, paper-textured app — with an optional AI agent powered by <b>your own API key</b>.</p>
+  <p class="cn">待办 · 记账 · 备忘三合一 —— 无账号、无云同步、无广告，数据只存本机。</p>
+  <div class="btns">
+    <a class="btn btn-p" href="https://github.com/xdrshjr/AragonTODO">★ Source on GitHub</a>
+    <a class="btn btn-s" href="https://github.com/xdrshjr/AragonTODO/releases/latest">Latest release</a>
+  </div>
+
+  <div class="shots">
+    <figure><img src="https://raw.githubusercontent.com/xdrshjr/AragonTODO/master/screenshots/hub.png" alt="Hub"><figcaption>Hub</figcaption></figure>
+    <figure><img src="https://raw.githubusercontent.com/xdrshjr/AragonTODO/master/screenshots/todo.png" alt="Todos"><figcaption>Todos</figcaption></figure>
+    <figure><img src="https://raw.githubusercontent.com/xdrshjr/AragonTODO/master/screenshots/money.png" alt="Ledger"><figcaption>Ledger</figcaption></figure>
+    <figure><img src="https://raw.githubusercontent.com/xdrshjr/AragonTODO/master/screenshots/stats.png" alt="Stats"><figcaption>Stats & budget</figcaption></figure>
+    <figure><img src="https://raw.githubusercontent.com/xdrshjr/AragonTODO/master/screenshots/agent.png" alt="AI agent"><figcaption>AI agent</figcaption></figure>
+  </div>
+
+  <div class="feat">
+    <div class="f"><div class="ico">✅</div><h3>Todos that keep up</h3><p>Quick-add, colored categories, due dates, a today progress ring, and repeating tasks that auto-spawn the next occurrence.</p></div>
+    <div class="f"><div class="ico">💰</div><h3>Ledger built for real life</h3><p>Day-grouped records, reimbursement tracking (pending → submitted → reimbursed), and monthly budget alerts.</p></div>
+    <div class="f"><div class="ico">📊</div><h3>Stats you'll actually read</h3><p>Monthly summary, category share bars, and a 6-month expense trend — hand-drawn SVG, no chart libs.</p></div>
+    <div class="f"><div class="ico">🤖</div><h3>AI agent, your keys</h3><p>Plug in OpenAI / Anthropic / custom endpoints, then chat to manage data and search the web. No key? 100% offline.</p></div>
+    <div class="f"><div class="ico">🔍</div><h3>Find anything</h3><p>Global search across todos, memos and records with jump-to-item highlighting.</p></div>
+    <div class="f"><div class="ico">💾</div><h3>Own your data</h3><p>One-tap JSON export/import. Keys are never exported. No lock-in, ever.</p></div>
+  </div>
+
+  <div class="pledge">
+    <h2>The pledge</h2>
+    <p>No accounts. No cloud sync. No ads, no analytics, no tracking. Your data leaves the device only if you configure an AI provider — and then only your chat prompts. 我们承诺：无账号 · 无云同步 · 无广告 · 无埋点。</p>
+  </div>
+
+  <footer>
+    AragonTask v1.6 · UI 中文 · <a href="https://github.com/xdrshjr/AragonTODO#readme">Documentation</a> · <a href="https://github.com/xdrshjr/AragonTODO/discussions">Discussions</a> · Built without Gradle · © 2024–2025 xdrshjr
+  </footer>
+</div>
+</body>
+</html>
