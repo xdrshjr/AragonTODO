@@ -6,27 +6,30 @@ const K = 'aragontask.v1';
 const KOLD = 'terra.todos.v1';
 
 const PALETTE = ['#CC785C', '#D4A27F', '#C5A463', '#7C9885', '#7D93A8', '#9A8C9C', '#6E6A60'];
+/* display names come from i18n.js: rcatName('food') -> 餐饮 / Food */
 const RCATS = [
-  { k: 'food', n: '餐饮', c: '#CC785C' },
-  { k: 'trans', n: '交通', c: '#7D93A8' },
-  { k: 'shop', n: '购物', c: '#D4A27F' },
-  { k: 'home', n: '居家', c: '#C5A463' },
-  { k: 'fun', n: '娱乐', c: '#9A8C9C' },
-  { k: 'med', n: '医疗', c: '#7C9885' },
-  { k: 'edu', n: '学习', c: '#6E6A60' },
-  { k: 'other', n: '其他', c: '#B5B0A0' }
+  { k: 'food', c: '#CC785C' },
+  { k: 'trans', c: '#7D93A8' },
+  { k: 'shop', c: '#D4A27F' },
+  { k: 'home', c: '#C5A463' },
+  { k: 'fun', c: '#9A8C9C' },
+  { k: 'med', c: '#7C9885' },
+  { k: 'edu', c: '#6E6A60' },
+  { k: 'other', c: '#B5B0A0' }
 ];
 const RSTAT = [
-  { k: 'pending', n: '待报销' },
-  { k: 'submitted', n: '已提交' },
-  { k: 'done', n: '已到账' }
+  { k: 'pending' },
+  { k: 'submitted' },
+  { k: 'done' }
 ];
 const AISTYLES = {
   openai: { n: 'OpenAI', url: 'https://api.openai.com/v1' },
   anthropic: { n: 'Anthropic', url: 'https://api.anthropic.com' },
-  custom: { n: '自定义', url: '' }
+  custom: { n: '', url: '' }
 };
-const WEEK = ['日', '一', '二', '三', '四', '五', '六'];
+const rcatName = (k) => t('rc_' + k);
+const rstatName = (k) => t('rst_' + k);
+const aiStyleName = (s) => (s === 'custom' ? t('ai_custom') : ((AISTYLES[s] || {}).n || s));
 const GREEN = '#788C5D';
 const MAX_TOOL_STEPS = 4;
 
@@ -50,26 +53,40 @@ const fmtAmt = (n) => {
   return v % 1 === 0 ? String(v) : v.toFixed(2);
 };
 
+/* locale-aware date formats: zh "3月8日" / en "Mar 8" */
+function fmtMD(d) {
+  return LANG === 'zh'
+    ? (d.getMonth() + 1) + '月' + d.getDate() + '日'
+    : t('mo_' + (d.getMonth() + 1)) + ' ' + d.getDate();
+}
+function fmtMDY(d) {
+  return LANG === 'zh'
+    ? d.getFullYear() + '年' + (d.getMonth() + 1) + '月' + d.getDate() + '日'
+    : t('mo_' + (d.getMonth() + 1)) + ' ' + d.getDate() + ', ' + d.getFullYear();
+}
+function fmtYM(y, m) {
+  return LANG === 'zh' ? y + '年' + m + '月' : t('mo_' + m) + ' ' + y;
+}
+
 function dueLabel(iso) {
   if (!iso) return null;
   const n = daysDiff(iso);
-  if (n === 0) return '今天';
-  if (n === 1) return '明天';
-  if (n === 2) return '后天';
-  if (n === -1) return '昨天';
-  if (n < -1) return '逾期 ' + (-n) + ' 天';
-  if (n <= 7) return '周' + WEEK[parseISO(iso).getDay()];
-  const d = parseISO(iso);
-  return (d.getMonth() + 1) + '月' + d.getDate() + '日';
+  if (n === 0) return t('d_today');
+  if (n === 1) return t('d_tomorrow');
+  if (n === 2) return t('d_d2');
+  if (n === -1) return t('d_yesterday');
+  if (n < -1) return t('d_overdue', -n);
+  if (n <= 7) return t('wk_' + parseISO(iso).getDay());
+  return fmtMD(parseISO(iso));
 }
 function dayLabelLong(iso) {
   const n = daysDiff(iso);
-  if (n === 0) return '今天';
-  if (n === -1) return '昨天';
-  if (n === -2) return '前天';
+  if (n === 0) return t('d_today');
+  if (n === -1) return t('d_yesterday');
+  if (n === -2) return t('d_before_yesterday');
   const d = parseISO(iso);
-  const y = d.getFullYear() === new Date().getFullYear() ? '' : d.getFullYear() + '年';
-  return y + (d.getMonth() + 1) + '月' + d.getDate() + '日 · 周' + WEEK[d.getDay()];
+  const sameYear = d.getFullYear() === new Date().getFullYear();
+  return (sameYear ? fmtMD(d) : fmtMDY(d)) + ' · ' + t('wk_' + d.getDay());
 }
 
 /* ---------- native net bridge (no CORS) ---------- */
@@ -85,7 +102,7 @@ function net(method, url, headers, body) {
       const id = 'n' + (++netSeq);
       netPend[id] = {
         res,
-        t: setTimeout(() => { delete netPend[id]; res({ status: -1, text: '{"error":"请求超时，请检查网络或地址"}' }); }, 90000)
+        t: setTimeout(() => { delete netPend[id]; res({ status: -1, text: '{"error":"' + t('net_timeout') + '"}' }); }, 90000)
       };
       try {
         AndroidNet.request(method, url, JSON.stringify(headers), body || '', id);
@@ -262,31 +279,31 @@ function persist(st) {
   try { localStorage.setItem(K, JSON.stringify(st || S)); } catch (e) { /* ignore */ }
 }
 function seed() {
-  const t = todayISO();
+  const td = todayISO();
   const now = Date.now();
   const d0 = new Date();
   const first = fmtISO(new Date(d0.getFullYear(), d0.getMonth(), 1));
   return {
     cats: [
-      { id: 'c1', name: '工作', color: '#CC785C' },
-      { id: 'c2', name: '生活', color: '#D4A27F' },
-      { id: 'c3', name: '学习', color: '#7C9885' }
+      { id: 'c1', name: t('seed_cat1'), color: '#CC785C' },
+      { id: 'c2', name: t('seed_cat2'), color: '#D4A27F' },
+      { id: 'c3', name: t('seed_cat3'), color: '#7C9885' }
     ],
     tasks: [
-      { id: uid(), title: '写季度复盘提纲', note: '重点整理增长数据与下季度目标', catId: 'c1', due: t, done: false, createdAt: now - 5e6, doneAt: null },
-      { id: uid(), title: '回复合作方邮件', note: '', catId: 'c1', due: t, done: true, createdAt: now - 8e6, doneAt: now - 3e5 },
-      { id: uid(), title: '读《设计中的设计》30 页', note: '', catId: 'c3', due: t, done: false, createdAt: now - 4e6, doneAt: null },
-      { id: uid(), title: '预约牙医复诊', note: '', catId: 'c2', due: null, done: false, createdAt: now - 3e6, doneAt: null },
-      { id: uid(), title: '给妈妈打电话', note: '', catId: 'c2', due: addDaysISO(1), done: false, createdAt: now - 2e6, doneAt: null },
-      { id: uid(), title: '整理读书笔记', note: '', catId: 'c3', due: null, done: false, createdAt: now - 1e6, doneAt: null }
+      { id: uid(), title: t('seed_t1'), note: t('seed_t1n'), catId: 'c1', due: td, done: false, createdAt: now - 5e6, doneAt: null },
+      { id: uid(), title: t('seed_t2'), note: '', catId: 'c1', due: td, done: true, createdAt: now - 8e6, doneAt: now - 3e5 },
+      { id: uid(), title: t('seed_t3'), note: '', catId: 'c3', due: td, done: false, createdAt: now - 4e6, doneAt: null },
+      { id: uid(), title: t('seed_t4'), note: '', catId: 'c2', due: null, done: false, createdAt: now - 3e6, doneAt: null },
+      { id: uid(), title: t('seed_t5'), note: '', catId: 'c2', due: addDaysISO(1), done: false, createdAt: now - 2e6, doneAt: null },
+      { id: uid(), title: t('seed_t6'), note: '', catId: 'c3', due: null, done: false, createdAt: now - 1e6, doneAt: null }
     ],
     records: [
-      { id: uid(), type: 'out', amount: 18, cat: 'food', title: '午饭 · 牛肉面', note: '', date: t, reimb: 'none', createdAt: now - 2e6 },
-      { id: uid(), type: 'out', amount: 42.5, cat: 'trans', title: '打车去客户公司', note: '差旅，找财务报销', date: t, reimb: 'pending', createdAt: now - 3e6 },
-      { id: uid(), type: 'out', amount: 89, cat: 'edu', title: '买两本设计书', note: '《设计中的设计》《写给大家看的设计书》', date: addDaysISO(-1), reimb: 'done', createdAt: now - 9e6 },
-      { id: uid(), type: 'out', amount: 35, cat: 'shop', title: '洗发水 + 纸巾', note: '', date: addDaysISO(-1), reimb: 'none', createdAt: now - 1e7 },
-      { id: uid(), type: 'out', amount: 128, cat: 'med', title: '挂号 + 检查费', note: '', date: addDaysISO(-2), reimb: 'submitted', createdAt: now - 1.2e7 },
-      { id: uid(), type: 'in', amount: 1200, cat: null, title: '兼职稿费', note: '', date: first, reimb: 'none', createdAt: now - 2e7 }
+      { id: uid(), type: 'out', amount: 18, cat: 'food', title: t('seed_r1'), note: '', date: td, reimb: 'none', createdAt: now - 2e6 },
+      { id: uid(), type: 'out', amount: 42.5, cat: 'trans', title: t('seed_r2'), note: t('seed_r2n'), date: td, reimb: 'pending', createdAt: now - 3e6 },
+      { id: uid(), type: 'out', amount: 89, cat: 'edu', title: t('seed_r3'), note: t('seed_r3n'), date: addDaysISO(-1), reimb: 'done', createdAt: now - 9e6 },
+      { id: uid(), type: 'out', amount: 35, cat: 'shop', title: t('seed_r4'), note: '', date: addDaysISO(-1), reimb: 'none', createdAt: now - 1e7 },
+      { id: uid(), type: 'out', amount: 128, cat: 'med', title: t('seed_r5'), note: '', date: addDaysISO(-2), reimb: 'submitted', createdAt: now - 1.2e7 },
+      { id: uid(), type: 'in', amount: 1200, cat: null, title: t('seed_r6'), note: '', date: first, reimb: 'none', createdAt: now - 2e7 }
     ],
     memos: [],
     chat: [],
@@ -300,9 +317,14 @@ function catOf(t) {
 function rcatOf(r) {
   return RCATS.find((c) => c.k === r.cat) || null;
 }
-function rcatByName(n) {
-  if (!n) return null;
-  return RCATS.find((c) => c.n === String(n).trim()) || RCATS.find((c) => c.k === String(n).trim()) || null;
+function rcatByName(nm) {
+  if (!nm) return null;
+  const s = String(nm).trim();
+  const sl = s.toLowerCase();
+  return RCATS.find((c) =>
+    I18N.zh['rc_' + c.k] === s ||
+    String(I18N.en['rc_' + c.k]).toLowerCase() === sl ||
+    c.k === sl) || null;
 }
 function rstatOf(r) {
   return RSTAT.find((x) => x.k === r.reimb) || null;
@@ -314,41 +336,43 @@ function hashColor(name) {
 }
 function memoColor(catName) {
   const c = S.cats.find((x) => x.name === catName);
-  return c ? c.color : hashColor(catName || '未分类');
+  return c ? c.color : hashColor(catName || 'uncat');
 }
 
 /* ---------- header ---------- */
 function renderHeader() {
   const d = new Date();
-  $('#hd-date').textContent = (d.getMonth() + 1) + '月' + d.getDate() + '日 · 周' + WEEK[d.getDay()];
+  $('#hd-date').textContent = LANG === 'zh'
+    ? fmtMD(d) + ' · ' + t('wk_' + d.getDay())
+    : t('wkf_' + d.getDay()) + ', ' + t('mo_' + (d.getMonth() + 1)) + ' ' + d.getDate();
   const h = d.getHours();
-  let hi = '夜深了';
-  if (h >= 5 && h < 11) hi = '早上好';
-  else if (h >= 11 && h < 13) hi = '中午好';
-  else if (h >= 13 && h < 18) hi = '下午好';
-  else if (h >= 18 && h < 23) hi = '晚上好';
+  let hi = t('hi_night');
+  if (h >= 5 && h < 11) hi = t('hi_morning');
+  else if (h >= 11 && h < 13) hi = t('hi_noon');
+  else if (h >= 13 && h < 18) hi = t('hi_afternoon');
+  else if (h >= 18 && h < 23) hi = t('hi_evening');
   $('#hd-hi').textContent = hi;
 }
 
 /* ---------- hub ---------- */
 function renderHub() {
-  const t = todayISO();
-  const pendToday = S.tasks.filter((x) => !x.done && x.due && x.due <= t).length;
+  const tdy = todayISO();
+  const pendToday = S.tasks.filter((x) => !x.done && x.due && x.due <= tdy).length;
   const pendAll = S.tasks.filter((x) => !x.done).length;
   const overdue = S.tasks.filter((x) => !x.done && x.due && daysDiff(x.due) < 0).length;
-  $('#hub-todo').innerHTML = (pendToday ? '今天 ' + pendToday + ' 项待办' : (pendAll ? pendAll + ' 项待办' : '全部完成')) +
-    (overdue ? ' <span class="odv">' + overdue + ' 项逾期</span>' : '');
-  const mo = S.records.filter((r) => (r.date || '').slice(0, 7) === todayISO().slice(0, 7) && r.type === 'out')
+  $('#hub-todo').innerHTML = (pendToday ? t('hub_due_today', pendToday) : (pendAll ? t('hub_pending', pendAll) : t('hub_all_done'))) +
+    (overdue ? ' <span class="odv">' + t('hub_overdue', overdue) + '</span>' : '');
+  const mo = S.records.filter((r) => (r.date || '').slice(0, 7) === tdy.slice(0, 7) && r.type === 'out')
     .reduce((a, r) => a + (r.amount || 0), 0);
-  $('#hub-money').textContent = '本月支出 ¥' + fmtAmt(mo);
-  $('#hub-memo').textContent = S.memos.length ? S.memos.length + ' 条备忘' : '暂无备忘';
+  $('#hub-money').textContent = t('hub_month_spend', fmtAmt(mo));
+  $('#hub-memo').textContent = S.memos.length ? t('hub_memos', S.memos.length) : t('hub_no_memos');
 }
 
 /* ---------- todo: hero ---------- */
 function renderHero() {
-  const t = todayISO();
-  const doneToday = S.tasks.filter((x) => x.done && x.doneAt && fmtISO(new Date(x.doneAt)) === t).length;
-  const pendingToday = S.tasks.filter((x) => !x.done && x.due && x.due <= t).length;
+  const tdy = todayISO();
+  const doneToday = S.tasks.filter((x) => x.done && x.doneAt && fmtISO(new Date(x.doneAt)) === tdy).length;
+  const pendingToday = S.tasks.filter((x) => !x.done && x.due && x.due <= tdy).length;
   const all = doneToday + pendingToday;
   const p = all ? doneToday / all : 0;
   const C = 163.4;
@@ -356,20 +380,20 @@ function renderHero() {
   $('#hero-done').textContent = doneToday;
   $('#hero-all').textContent = all;
   $('#hero-sub').textContent =
-    all === 0 ? '今天还没有安排，从一件小事开始'
-    : p === 1 ? '今日已全部完成，好好休息'
-    : '还剩 ' + (all - doneToday) + ' 项待完成';
+    all === 0 ? t('hero_none')
+    : p === 1 ? t('hero_done_all')
+    : t('hero_left', all - doneToday);
 }
 
 /* ---------- todo: chips ---------- */
 function renderChips() {
-  const pending = S.tasks.filter((t) => !t.done);
-  let h = chipHTML('all', null, '全部', pending.length, F.cat === 'all');
+  const pending = S.tasks.filter((x) => !x.done);
+  let h = chipHTML('all', null, t('chip_all'), pending.length, F.cat === 'all');
   S.cats.forEach((c) => {
-    const n = pending.filter((t) => t.catId === c.id).length;
+    const n = pending.filter((x) => x.catId === c.id).length;
     h += chipHTML(c.id, c.color, c.name, n, F.cat === c.id);
   });
-  h += '<button class="chip chip--ic" data-act="manage" aria-label="管理分类">' +
+  h += '<button class="chip chip--ic" data-act="manage" aria-label="' + esc(t('manage_aria')) + '">' +
        '<svg viewBox="0 0 16 16" fill="none"><path d="M2 4h7M12.5 4H14M2 12h3M8.5 12H14M12 2v4M7 10v4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><circle cx="10.5" cy="4" r="1.8" stroke="currentColor" stroke-width="1.6"/><circle cx="6.5" cy="12" r="1.8" stroke="currentColor" stroke-width="1.6"/></svg></button>';
   $('#chips').innerHTML = h;
 }
@@ -394,30 +418,30 @@ function visibleTasks(done) {
   return arr;
 }
 
-function rowHTML(t, i) {
-  const c = catOf(t);
-  const overdue = !t.done && t.due && daysDiff(t.due) < 0;
-  const due = t.due ? '<span class="due' + (overdue ? ' od' : '') + '">' + esc(dueLabel(t.due)) + '</span>' : '';
+function rowHTML(tk, i) {
+  const c = catOf(tk);
+  const overdue = !tk.done && tk.due && daysDiff(tk.due) < 0;
+  const due = tk.due ? '<span class="due' + (overdue ? ' od' : '') + '">' + esc(dueLabel(tk.due)) + '</span>' : '';
   const meta =
     '<div class="meta">' +
     (c ? '<i class="mdot" style="background:' + c.color + '"></i><span>' + esc(c.name) + '</span>'
-       : '<i class="mdot" style="background:#B5B0A0"></i><span>未分类</span>') +
-    (t.due ? '<span class="sep">·</span>' + due : '') +
-    (t.repeat ? '<span class="sep">·</span><span class="rp">↻ ' + repLabel(t.repeat) + '</span>' : '') +
+       : '<i class="mdot" style="background:#B5B0A0"></i><span>' + esc(t('uncat')) + '</span>') +
+    (tk.due ? '<span class="sep">·</span>' + due : '') +
+    (tk.repeat ? '<span class="sep">·</span><span class="rp">↻ ' + esc(repLabel(tk.repeat)) + '</span>' : '') +
     '</div>';
   const detail =
     '<div class="detail"><div class="detail-in">' +
-    (t.note ? '<div class="note">' + esc(t.note) + '</div>' : '') +
+    (tk.note ? '<div class="note">' + esc(tk.note) + '</div>' : '') +
     '<div class="acts">' +
-    '<button class="act-ed" data-act="edit" data-id="' + t.id + '">编辑</button>' +
-    '<button class="act-del" data-act="del" data-id="' + t.id + '">删除</button>' +
+    '<button class="act-ed" data-act="edit" data-id="' + tk.id + '">' + esc(t('edit')) + '</button>' +
+    '<button class="act-del" data-act="del" data-id="' + tk.id + '">' + esc(t('del')) + '</button>' +
     '</div></div></div>';
   return (
-    '<div class="row' + (t.done ? ' done-row' : '') + (expandedId === t.id ? ' x' : '') + '" data-id="' + t.id + '" style="animation-delay:' + Math.min(i, 8) * 28 + 'ms">' +
-    '<button class="cbx" data-act="toggle" data-id="' + t.id + '" aria-label="完成">' +
+    '<div class="row' + (tk.done ? ' done-row' : '') + (expandedId === tk.id ? ' x' : '') + '" data-id="' + tk.id + '" style="animation-delay:' + Math.min(i, 8) * 28 + 'ms">' +
+    '<button class="cbx" data-act="toggle" data-id="' + tk.id + '" aria-label="' + esc(t('done_sec')) + '">' +
     '<svg viewBox="0 0 12 12"><path d="M2.2 6.4l2.6 2.6L9.8 3.2"/></svg></button>' +
-    '<div class="rmain" data-act="expand" data-id="' + t.id + '">' +
-    '<div class="ttl">' + esc(t.title) + '</div>' + meta + detail +
+    '<div class="rmain" data-act="expand" data-id="' + tk.id + '">' +
+    '<div class="ttl">' + esc(tk.title) + '</div>' + meta + detail +
     '</div>' +
     '<svg class="chev" viewBox="0 0 16 16" fill="none"><path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>' +
     '</div>'
@@ -433,10 +457,8 @@ function renderList() {
   const empty = $('#empty');
   if (!todo.length) {
     const cname = F.cat === 'all' ? null : (S.cats.find((c) => c.id === F.cat) || {}).name;
-    $('#empty-t').textContent = cname ? '这里很安静' : '一切安好';
-    $('#empty-p').textContent = cname
-      ? '「' + cname + '」还没有待办，点下面的新任务安排一件吧'
-      : '今天的任务都完成了，或还没有安排。深呼吸，从一件小事开始。';
+    $('#empty-t').textContent = cname ? t('empty_quiet') : t('empty_ok');
+    $('#empty-p').textContent = cname ? t('empty_cat_p', cname) : t('empty_p');
     empty.hidden = false;
   } else {
     empty.hidden = true;
@@ -477,10 +499,10 @@ function renderMoney() {
 
   const isCur = M.month === todayISO().slice(0, 7);
   const [y, m] = M.month.split('-').map(Number);
-  $('#m-lb').textContent = isCur ? '本月支出' : (y + '年' + m + '月支出');
-  $('#m-month').textContent = y + '年' + m + '月';
+  $('#m-lb').textContent = isCur ? t('m_spend_cur') : t('m_spend_m', fmtYM(y, m));
+  $('#m-month').textContent = fmtYM(y, m);
   $('#m-out').textContent = fmtAmt(out);
-  $('#m-sub').textContent = '收入 ' + fmtAmt(inn) + ' 元 · 结余 ' + (bal >= 0 ? '+' : '-') + fmtAmt(Math.abs(bal)) + ' 元';
+  $('#m-sub').textContent = t('m_sub', fmtAmt(inn), (bal >= 0 ? '+' : '-') + fmtAmt(Math.abs(bal)));
 
   /* budget mini bar */
   const bud = S.budget && S.budget.monthly;
@@ -492,7 +514,7 @@ function renderMoney() {
     f.style.width = Math.min(p, 1) * 100 + '%';
     f.classList.toggle('warn', p >= 0.8 && p < 1);
     f.classList.toggle('over', p >= 1);
-    mini.title = p >= 1 ? '已超支' : '预算 ' + Math.round(p * 100) + '%';
+    mini.title = p >= 1 ? t('bud_over_tt') : t('bud_pct_tt', Math.round(p * 100));
   } else mini.hidden = true;
 
   const pend = S.records
@@ -507,15 +529,15 @@ function renderMoney() {
 
 function renderMChips() {
   const rs = monthRecords();
-  let h = mchipHTML('all', null, '全部', rs.length, M.filter === 'all');
+  let h = mchipHTML('all', null, t('chip_all'), rs.length, M.filter === 'all');
   RCATS.forEach((c) => {
     const n = rs.filter((r) => r.type === 'out' && r.cat === c.k).length;
-    if (n) h += mchipHTML(c.k, c.c, c.n, n, M.filter === c.k);
+    if (n) h += mchipHTML(c.k, c.c, rcatName(c.k), n, M.filter === c.k);
   });
   const nin = rs.filter((r) => r.type === 'in').length;
-  if (nin) h += mchipHTML('in', GREEN, '收入', nin, M.filter === 'in');
+  if (nin) h += mchipHTML('in', GREEN, t('chip_in'), nin, M.filter === 'in');
   const nrb = rs.filter((r) => r.reimb !== 'none').length;
-  if (nrb) h += mchipHTML('reimb', '#CC785C', '报销', nrb, M.filter === 'reimb');
+  if (nrb) h += mchipHTML('reimb', '#CC785C', t('chip_reimb'), nrb, M.filter === 'reimb');
   $('#m-chips').innerHTML = h;
 }
 function mchipHTML(id, color, name, n, on) {
@@ -528,22 +550,22 @@ function recRowHTML(r, i) {
   const c = rcatOf(r);
   const isIn = r.type === 'in';
   const dotC = isIn ? GREEN : (c ? c.c : '#B5B0A0');
-  const catName = isIn ? '收入' : (c ? c.n : '未分类');
+  const catName = isIn ? t('rt_in') : (c ? rcatName(c.k) : t('uncat'));
   const st = rstatOf(r);
   const badge = (!isIn && st && r.reimb !== 'none')
-    ? '<span class="rb rb-' + r.reimb + '">' + st.n + '</span>' : '';
+    ? '<span class="rb rb-' + r.reimb + '">' + esc(rstatName(r.reimb)) + '</span>' : '';
   const detail =
     '<div class="detail"><div class="detail-in">' +
     (r.note ? '<div class="note">' + esc(r.note) + '</div>' : '') +
     (!isIn && r.reimb !== 'none'
-      ? '<div class="st-wrap"><span class="st-lb">报销状态</span><div class="st-pills">' +
+      ? '<div class="st-wrap"><span class="st-lb">' + esc(t('reimb_state')) + '</span><div class="st-pills">' +
         RSTAT.map((x) =>
-          '<button class="chip s' + (r.reimb === x.k ? ' sel' : '') + '" data-act="rst" data-id="' + r.id + '" data-st="' + x.k + '">' + x.n + '</button>'
+          '<button class="chip s' + (r.reimb === x.k ? ' sel' : '') + '" data-act="rst" data-id="' + r.id + '" data-st="' + x.k + '">' + esc(rstatName(x.k)) + '</button>'
         ).join('') + '</div></div>'
       : '') +
     '<div class="acts">' +
-    '<button class="act-ed" data-act="redit" data-id="' + r.id + '">编辑</button>' +
-    '<button class="act-del" data-act="rdel" data-id="' + r.id + '">删除</button>' +
+    '<button class="act-ed" data-act="redit" data-id="' + r.id + '">' + esc(t('edit')) + '</button>' +
+    '<button class="act-del" data-act="rdel" data-id="' + r.id + '">' + esc(t('del')) + '</button>' +
     '</div></div></div>';
   return (
     '<div class="row m-row' + (expandedRid === r.id ? ' x' : '') + '" style="animation-delay:' + Math.min(i, 8) * 24 + 'ms">' +
@@ -562,8 +584,8 @@ function renderMGroups() {
   const arr = mFiltered().slice().sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : (b.createdAt || 0) - (a.createdAt || 0)));
   const empty = $('#m-empty');
   if (!arr.length) {
-    $('#m-empty-t').textContent = M.month !== todayISO().slice(0, 7) ? '这个月没有记录' : '还没有账目';
-    $('#m-empty-p').textContent = '记下第一笔，看看钱都去哪儿了。';
+      $('#m-empty-t').textContent = M.month !== todayISO().slice(0, 7) ? t('m_empty_nm') : t('m_empty');
+      $('#m-empty-p').textContent = t('m_empty_p');
     empty.hidden = false;
     $('#m-groups').innerHTML = '';
     return;
@@ -576,7 +598,7 @@ function renderMGroups() {
     const rows = arr.filter((r) => r.date === d);
     const o = rows.filter((r) => r.type === 'out').reduce((a, r) => a + (r.amount || 0), 0);
     const i = rows.filter((r) => r.type === 'in').reduce((a, r) => a + (r.amount || 0), 0);
-    const sum = '支出 ' + fmtAmt(o) + (i ? ' · 收入 ' + fmtAmt(i) : '');
+      const sum = t('m_out', fmtAmt(o)) + (i ? ' · ' + t('m_in', fmtAmt(i)) : '');
     h += '<div class="m-day"><div class="m-dh"><b>' + esc(dayLabelLong(d)) + '</b>' +
       '<span class="m-dsum">' + sum + '</span></div>' +
       '<div class="list card">' + rows.map(recRowHTML).join('') + '</div></div>';
@@ -592,9 +614,9 @@ function setView(v) {
   VIEWS.forEach((x) => { $('#view-' + x).hidden = x !== v; });
   const fab = $('#fab');
   const spacer = $('#spacer');
-  if (v === 'todo') { $('#fab-t').textContent = '新任务'; }
-  else if (v === 'money') { $('#fab-t').textContent = '记一笔'; }
-  else if (v === 'memo') { $('#fab-t').textContent = '记一条'; }
+  if (v === 'todo') { $('#fab-t').textContent = t('fab_todo'); }
+  else if (v === 'money') { $('#fab-t').textContent = t('fab_money'); }
+  else if (v === 'memo') { $('#fab-t').textContent = t('fab_memo'); }
   fab.style.display = spacer.style.display = (v === 'hub' || v === 'agent') ? 'none' : '';
   document.body.classList.toggle('agent-mode', v === 'agent');
   expandedId = null;
@@ -603,7 +625,7 @@ function setView(v) {
   else if (v === 'money') renderMoney();
   else if (v === 'memo') renderMemoView();
   else if (v === 'agent') renderChat();
-  else renderList();
+  else { renderChips(); renderList(); }
 }
 
 function renderAll() {
@@ -636,41 +658,41 @@ let selCat = null;
 let selDue = null;
 let selRepeat = null;
 
-function openTaskSheet(t) {
-  editingTask = t || null;
-  $('#ts-h').textContent = t ? '编辑任务' : '新任务';
-  $('#ts-title').value = t ? t.title : '';
-  $('#ts-note').value = t ? (t.note || '') : '';
-  selCat = t ? t.catId : (F.cat !== 'all' ? F.cat : (S.cats[0] ? S.cats[0].id : null));
-  selDue = t ? (t.due || null) : null;
-  selRepeat = t ? (t.repeat || null) : null;
-  $('#ts-del').hidden = !t;
+function openTaskSheet(tk) {
+  editingTask = tk || null;
+  $('#ts-h').textContent = tk ? t('ts_edit') : t('ts_new');
+  $('#ts-title').value = tk ? tk.title : '';
+  $('#ts-note').value = tk ? (tk.note || '') : '';
+  selCat = tk ? tk.catId : (F.cat !== 'all' ? F.cat : (S.cats[0] ? S.cats[0].id : null));
+  selDue = tk ? (tk.due || null) : null;
+  selRepeat = tk ? (tk.repeat || null) : null;
+  $('#ts-del').hidden = !tk;
   renderSheetCats();
   renderSheetDates();
   renderRepeat();
   refreshSaveBtn();
   openSheet(taskSheet);
-  setTimeout(() => { if (!t) $('#ts-title').focus(); }, 380);
+  setTimeout(() => { if (!tk) $('#ts-title').focus(); }, 380);
 }
 function renderSheetCats() {
   let h = S.cats.map((c) =>
     '<button class="chip s' + (selCat === c.id ? ' sel' : '') + '" data-act="sc" data-id="' + c.id + '">' +
     '<i class="dot" style="background:' + c.color + '"></i>' + esc(c.name) + '</button>').join('');
-  h += '<button class="chip s' + (selCat === null ? ' sel' : '') + '" data-act="sc" data-id="">未分类</button>';
+  h += '<button class="chip s' + (selCat === null ? ' sel' : '') + '" data-act="sc" data-id="">' + esc(t('uncat')) + '</button>';
   $('#ts-cats').innerHTML = h;
 }
 function renderSheetDates() {
   const opts = [
-    { v: null, label: '不限' },
-    { v: todayISO(), label: '今天' },
-    { v: addDaysISO(1), label: '明天' },
-    { v: addDaysISO(2), label: '后天' }
+    { v: null, label: t('d_none') },
+    { v: todayISO(), label: t('d_today') },
+    { v: addDaysISO(1), label: t('d_tomorrow') },
+    { v: addDaysISO(2), label: t('d_d2') }
   ];
   const matched = opts.some((o) => o.v === selDue);
   let h = opts.map((o) =>
     '<button class="chip s' + (selDue === o.v ? ' sel' : '') + '" data-act="sd" data-id="' + (o.v || '') + '">' +
     o.label + '</button>').join('');
-  const custom = (!matched && selDue) ? dueLabel(selDue) : '选日期';
+  const custom = (!matched && selDue) ? dueLabel(selDue) : t('pick_date');
   h += '<button class="chip s' + ((!matched && selDue) ? ' sel' : '') + '" data-act="sd-pick">' + esc(custom) + '</button>';
   $('#ts-dates').innerHTML = h;
 }
@@ -696,7 +718,7 @@ function saveTask() {
   }
   persist();
   renderAll();
-  toast(editingTask ? '任务已更新' : '已添加「' + title + '」');
+  toast(editingTask ? t('toast_task_upd') : t('toast_task_add', title));
   closeSheets();
 }
 
@@ -708,7 +730,7 @@ function deleteTask(id) {
   if (expandedId === id) expandedId = null;
   persist();
   renderAll();
-  toast('已删除「' + removed.title + '」', () => {
+  toast(t('toast_task_del', removed.title), () => {
     S.tasks.push(removed);
     persist();
     renderAll();
@@ -724,7 +746,7 @@ let selRDate = null;
 
 function openRecSheet(r) {
   editingRec = r || null;
-  $('#rs-h').textContent = r ? '编辑记录' : '记一笔';
+  $('#rs-h').textContent = r ? t('rs_edit') : t('rs_new');
   selRType = r ? r.type : 'out';
   selRCat = r && r.cat ? r.cat : mDefaultCat();
   selRDate = r ? r.date : todayISO();
@@ -760,15 +782,15 @@ function renderRCats() {
 }
 function renderRDates() {
   const opts = [
-    { v: todayISO(), label: '今天' },
-    { v: addDaysISO(-1), label: '昨天' },
-    { v: addDaysISO(-2), label: '前天' }
+    { v: todayISO(), label: t('d_today') },
+    { v: addDaysISO(-1), label: t('d_yesterday') },
+    { v: addDaysISO(-2), label: t('d_before_yesterday') }
   ];
   const matched = opts.some((o) => o.v === selRDate);
   let h = opts.map((o) =>
     '<button class="chip s' + (selRDate === o.v ? ' sel' : '') + '" data-act="rd" data-id="' + o.v + '">' +
     o.label + '</button>').join('');
-  const custom = (!matched && selRDate) ? dueLabel(selRDate) : '选日期';
+  const custom = (!matched && selRDate) ? dueLabel(selRDate) : t('pick_date');
   h += '<button class="chip s' + ((!matched && selRDate) ? ' sel' : '') + '" data-act="rd-pick">' + esc(custom) + '</button>';
   $('#rs-dates').innerHTML = h;
 }
@@ -780,13 +802,13 @@ function refreshRSBtn() {
 function saveRec() {
   const amount = Math.round(parseFloat($('#rs-amt').value) * 100) / 100;
   if (!(amount > 0)) {
-    toast('请先输入有效金额');
+    toast(t('rs_need_amt'));
     const a = $('#rs-amt');
     a.focus(); a.select();
     return;
   }
   const title = $('#rs-title').value.trim();
-  const catName = selRType === 'out' ? ((RCATS.find((c) => c.k === selRCat) || {}).n || '') : '收入';
+  const catName = selRType === 'out' ? rcatName(selRCat) : t('rt_in');
   const reimb = (selRType === 'out' && $('#rs-reimb').checked) ? 'pending' : 'none';
   if (editingRec) {
     editingRec.type = selRType;
@@ -809,7 +831,7 @@ function saveRec() {
   if (selRDate && selRDate.slice(0, 7) !== M.month) M.month = selRDate.slice(0, 7);
   persist();
   renderAll();
-  toast((editingRec ? '已更新 ' : '已记 ') + (selRType === 'out' ? '−' : '+') + fmtAmt(amount));
+  toast(editingRec ? t('toast_rec_upd', (selRType === 'out' ? '−' : '+') + fmtAmt(amount)) : t('toast_rec_log', (selRType === 'out' ? '−' : '+') + fmtAmt(amount)));
   closeSheets();
 }
 function deleteRec(id) {
@@ -820,7 +842,7 @@ function deleteRec(id) {
   if (expandedRid === id) expandedRid = null;
   persist();
   renderAll();
-  toast('已删除 ' + (removed.type === 'in' ? '+' : '-') + fmtAmt(removed.amount) + ' 记录', () => {
+  toast(t('toast_rec_del', (removed.type === 'in' ? '+' : '-') + fmtAmt(removed.amount)), () => {
     S.records.push(removed);
     persist();
     renderAll();
@@ -892,14 +914,14 @@ async function runTool(tool) {
   const args = tool.args || {};
   if (name === 'web_search') {
     const q = String(args.query || '').slice(0, 200);
-    if (!q) return { ok: false, text: '缺少 query 参数', summary: '检索失败' };
+    if (!q) return { ok: false, text: t('ag_missing_query'), summary: t('ag_search_bad') };
     const url = 'https://html.duckduckgo.com/html/?q=' + encodeURIComponent(q);
     const r = await net('GET', url, {
       'User-Agent': 'Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 Chrome/120 Mobile Safari/537.36',
-      'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8'
+      'Accept-Language': LANG === 'zh' ? 'zh-CN,zh;q=0.9,en;q=0.8' : 'en-US,en;q=0.9'
     }, '');
     if (r.status < 200 || r.status >= 300) {
-      return { ok: false, text: '搜索请求失败 HTTP ' + r.status, summary: '检索「' + q + '」失败' };
+      return { ok: false, text: t('ag_search_http', r.status), summary: t('ag_search_fail', q) };
     }
     const doc = new DOMParser().parseFromString(r.text, 'text/html');
     const out = [];
@@ -914,10 +936,10 @@ async function runTool(tool) {
       const snip = strip(sn ? sn.innerHTML : '');
       if (title) out.push({ title, href, snip });
     });
-    if (!out.length) return { ok: true, text: '没有找到相关结果，可以换个关键词。', summary: '检索「' + q + '」：0 条' };
+      if (!out.length) return { ok: true, text: t('ag_no_results'), summary: t('ag_search_zero', q) };
     return {
       ok: true,
-      summary: '检索「' + q + '」：' + out.length + ' 条结果',
+      summary: t('ag_search_ok', q, out.length),
       text: out.map((o, i) => '[' + (i + 1) + '] ' + o.title + '\n' + o.href + '\n' + o.snip).join('\n\n')
     };
   }
@@ -928,29 +950,43 @@ async function runTool(tool) {
       'User-Agent': 'Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36'
     }, '');
     if (r.status < 200 || r.status >= 300) {
-      return { ok: false, text: '网页抓取失败 HTTP ' + r.status, summary: '打开 ' + u + ' 失败' };
+      return { ok: false, text: t('ag_fetch_fail', r.status), summary: t('ag_open_fail', u) };
     }
     const txt = String(r.text).replace(/\n{3,}/g, '\n\n').slice(0, 4000);
-    return { ok: true, text: txt, summary: '已读取 ' + u };
+    return { ok: true, text: txt, summary: t('ag_read_ok', u) };
   }
-  return { ok: false, text: '未知工具 ' + name, summary: '未知工具' };
+  return { ok: false, text: t('ag_unknown_tool', name), summary: t('ag_tool_unknown_sum') };
 }
 
 /* ---------- agent prompt & parse ---------- */
 function systemPrompt() {
-  const cats = S.cats.map((c) => c.name).join('、');
-  return '你是「AragonTask」内置的通用智能体，当前日期：' + todayISO() +
-    '。用户现有任务分类：' + (cats || '无') + '。\n' +
-    '你的能力：问答闲聊、管理用户数据、联网检索（工具）。\n\n' +
-    '【输出格式 · 重要】你的回复会以流式方式逐字显示给用户，所以：\n' +
-    '1. 先直接输出给用户看的回答文本，可用 Markdown（加粗、列表、链接、代码），语言简洁温和，中文。\n' +
-    '2. 若本轮需要联网检索（天气、新闻、资料、价格等外部信息），在回答文本后另起一行输出：\n' +
-    '```tool\n{"name":"web_search 或 open_url","args":{"query":"..."} 或 {"url":"..."}}\n```\n' +
-    '工具结果会回传给你，你再输出最终回答（最多 ' + MAX_TOOL_STEPS + ' 轮）。\n' +
-    '3. 若本轮需要数据操作，在回答文本后另起一行输出（只写需要的字段）：\n' +
-    '```json\n{"todos":[{"title":"...","due":"YYYY-MM-DD 或 null","category":"分类名"}],"memos":[{"title":"...","note":"...","category":"..."}],"records":[{"type":"out|in","amount":25,"title":"...","category":"餐饮/交通/购物/居家/娱乐/医疗/学习/其他","date":"YYYY-MM-DD","reimb":false}],"ops":[{"action":"complete|delete|update","target":"todo|memo|record","match":"标题关键词","to":{}}]}\n```\n' +
-    '4. 普通问答不需要任何代码块。代码块是给系统执行的，用户看不到。\n' +
-    '说明：category 优先复用现有分类；报销类支出 reimb 为 true；「今天/明天/下周三」等换算成具体日期；update 用 to 传要改的字段。';
+  const cats = S.cats.map((c) => c.name).join(LANG === 'zh' ? '、' : ', ');
+  if (LANG === 'zh') {
+    return '你是「AragonTask」内置的通用智能体，当前日期：' + todayISO() +
+      '。用户现有任务分类：' + (cats || '无') + '。\n' +
+      '你的能力：问答闲聊、管理用户数据、联网检索（工具）。\n\n' +
+      '【输出格式 · 重要】你的回复会以流式方式逐字显示给用户，所以：\n' +
+      '1. 先直接输出给用户看的回答文本，可用 Markdown（加粗、列表、链接、代码），语言简洁温和，中文。\n' +
+      '2. 若本轮需要联网检索（天气、新闻、资料、价格等外部信息），在回答文本后另起一行输出：\n' +
+      '```tool\n{"name":"web_search 或 open_url","args":{"query":"..."} 或 {"url":"..."}}\n```\n' +
+      '工具结果会回传给你，你再输出最终回答（最多 ' + MAX_TOOL_STEPS + ' 轮）。\n' +
+      '3. 若本轮需要数据操作，在回答文本后另起一行输出（只写需要的字段）：\n' +
+      '```json\n{"todos":[{"title":"...","due":"YYYY-MM-DD 或 null","category":"分类名"}],"memos":[{"title":"...","note":"...","category":"..."}],"records":[{"type":"out|in","amount":25,"title":"...","category":"餐饮/交通/购物/居家/娱乐/医疗/学习/其他","date":"YYYY-MM-DD","reimb":false}],"ops":[{"action":"complete|delete|update","target":"todo|memo|record","match":"标题关键词","to":{}}]}\n```\n' +
+      '4. 普通问答不需要任何代码块。代码块是给系统执行的，用户看不到。\n' +
+      '说明：category 优先复用现有分类；报销类支出 reimb 为 true；「今天/明天/下周三」等换算成具体日期；update 用 to 传要改的字段。';
+  }
+  return 'You are the built-in agent of "AragonTask". Today\'s date: ' + todayISO() +
+    ". The user's existing task categories: " + (cats || 'none') + '.\n' +
+    'Your abilities: casual Q&A, managing the user\'s data, and web search (tools).\n\n' +
+    '[Output format - important] Your reply is streamed to the user character by character, so:\n' +
+    '1. Output the user-facing answer text first. Markdown is fine (bold, lists, links, code). Keep it concise and warm, in English.\n' +
+    '2. If this turn needs the web (weather, news, facts, prices...), output after your text, on a new line:\n' +
+    '```tool\n{"name":"web_search or open_url","args":{"query":"..."} or {"url":"..."}}\n```\n' +
+    'The tool result is sent back to you; then you produce the final answer (at most ' + MAX_TOOL_STEPS + ' rounds).\n' +
+    '3. If this turn needs data operations, output after your text (only the fields needed):\n' +
+    '```json\n{"todos":[{"title":"...","due":"YYYY-MM-DD or null","category":"category name"}],"memos":[{"title":"...","note":"...","category":"..."}],"records":[{"type":"out|in","amount":25,"title":"...","category":"food/transport/shopping/home/fun/medical/study/other","date":"YYYY-MM-DD","reimb":false}],"ops":[{"action":"complete|delete|update","target":"todo|memo|record","match":"title keyword","to":{}}]}\n```\n' +
+    '4. Plain Q&A needs no code blocks. Code blocks are executed by the system and never shown to the user.\n' +
+    'Notes: prefer reusing existing categories for category; reimb true for reimbursable expenses; convert "today/tomorrow/next Wednesday" into concrete dates; pass the changed fields in to for update.';
 }
 function extractJSON(text) {
   if (!text) return null;
@@ -989,7 +1025,7 @@ function applyAgent(j) {
     const catName = String(m.category || '').slice(0, 8) || null;
     const mm = {
       id: uid(),
-      title: String(m.title || '备忘').slice(0, 40),
+      title: String(m.title || t('def_memo')).slice(0, 40),
       note: String(m.note || '').slice(0, 300),
       catName,
       createdAt: Date.now()
@@ -997,14 +1033,14 @@ function applyAgent(j) {
     S.memos.push(mm);
     cards.push({ kind: 'memo', title: mm.title, note: mm.note, catName });
   });
-  (j.todos || []).slice(0, 8).forEach((t) => {
-    const catName = String(t.category || '').slice(0, 8) || null;
+  (j.todos || []).slice(0, 8).forEach((td) => {
+    const catName = String(td.category || '').slice(0, 8) || null;
     const tt = {
       id: uid(),
-      title: String(t.title || '待办').slice(0, 60),
+      title: String(td.title || t('def_todo')).slice(0, 60),
       note: '',
       catId: resolveCat(catName),
-      due: validISO(t.due),
+      due: validISO(td.due),
       done: false,
       createdAt: Date.now(),
       doneAt: null
@@ -1021,7 +1057,7 @@ function applyAgent(j) {
       id: uid(),
       type: isIn ? 'in' : 'out',
       amount,
-      title: String(r.title || (isIn ? '收入' : (rc ? rc.n : '支出'))).slice(0, 30),
+        title: String(r.title || (isIn ? t('def_income') : (rc ? rcatName(rc.k) : t('def_expense')))).slice(0, 30),
       cat: isIn ? null : (rc ? rc.k : 'other'),
       note: '',
       date: validISO(r.date) || todayISO(),
@@ -1029,47 +1065,47 @@ function applyAgent(j) {
       createdAt: Date.now()
     };
     S.records.push(rr);
-    cards.push({ kind: 'rec', title: rr.title, catName: isIn ? '收入' : (rc ? rc.n : '其他'), amount: rr.amount, isIn });
+      cards.push({ kind: 'rec', title: rr.title, catName: isIn ? t('rt_in') : (rc ? rcatName(rc.k) : t('rc_other')), amount: rr.amount, isIn });
   });
   (j.ops || []).slice(0, 8).forEach((op) => {
     const action = op.action, target = op.target;
     let label = '';
     if (target === 'todo') {
-      const t = findByMatch(S.tasks.filter((x) => !x.done), op.match) || findByMatch(S.tasks, op.match);
-      if (t) {
-        if (action === 'complete') { t.done = true; t.doneAt = Date.now(); label = '已完成「' + t.title + '」'; }
+      const tk = findByMatch(S.tasks.filter((x) => !x.done), op.match) || findByMatch(S.tasks, op.match);
+      if (tk) {
+        if (action === 'complete') { tk.done = true; tk.doneAt = Date.now(); label = t('op_complete', tk.title); }
         else if (action === 'delete') {
-          S.tasks = S.tasks.filter((x) => x.id !== t.id);
-          label = '已删除待办「' + t.title + '」';
+          S.tasks = S.tasks.filter((x) => x.id !== tk.id);
+          label = t('op_todo_del', tk.title);
         } else if (action === 'update') {
           const to = op.to || {};
-          if (to.title) t.title = String(to.title).slice(0, 60);
-          if (to.note !== undefined) t.note = String(to.note || '').slice(0, 200);
-          if (to.due !== undefined) t.due = validISO(to.due);
-          if (to.category) t.catId = resolveCat(String(to.category).slice(0, 8));
-          label = '已更新待办「' + t.title + '」';
+          if (to.title) tk.title = String(to.title).slice(0, 60);
+          if (to.note !== undefined) tk.note = String(to.note || '').slice(0, 200);
+          if (to.due !== undefined) tk.due = validISO(to.due);
+          if (to.category) tk.catId = resolveCat(String(to.category).slice(0, 8));
+          label = t('op_todo_upd', tk.title);
         }
-      } else label = '没找到相关待办';
+      } else label = t('op_todo_404');
     } else if (target === 'memo') {
       const m = findByMatch(S.memos, op.match);
       if (m) {
         if (action === 'delete') {
           S.memos = S.memos.filter((x) => x.id !== m.id);
-          label = '已删除备忘「' + m.title + '」';
+          label = t('op_memo_del', m.title);
         } else if (action === 'update') {
           const to = op.to || {};
           if (to.title) m.title = String(to.title).slice(0, 40);
           if (to.note !== undefined) m.note = String(to.note || '').slice(0, 300);
           if (to.category !== undefined) m.catName = String(to.category || '').slice(0, 8) || null;
-          label = '已更新备忘「' + m.title + '」';
-        } else label = '备忘暂不支持此操作';
-      } else label = '没找到相关备忘';
+          label = t('op_memo_upd', m.title);
+        } else label = t('op_memo_unsupported');
+      } else label = t('op_memo_404');
     } else if (target === 'record') {
       const r0 = findByMatch(S.records, op.match);
       if (r0) {
         if (action === 'delete') {
           S.records = S.records.filter((x) => x.id !== r0.id);
-          label = '已删除记录「' + r0.title + '」';
+          label = t('op_rec_del', r0.title);
         } else if (action === 'update') {
           const to = op.to || {};
           if (to.amount !== undefined && parseFloat(to.amount) > 0) r0.amount = Math.round(parseFloat(to.amount) * 100) / 100;
@@ -1077,11 +1113,11 @@ function applyAgent(j) {
           if (to.reimb !== undefined) r0.reimb = to.reimb ? 'pending' : 'none';
           const rc = rcatByName(to.category);
           if (rc) r0.cat = rc.k;
-          label = '已更新记录「' + r0.title + '」';
-        } else label = '记录暂不支持此操作';
-      } else label = '没找到相关记录';
+          label = t('op_rec_upd', r0.title);
+        } else label = t('op_rec_unsupported');
+      } else label = t('op_rec_404');
     }
-    cards.push({ kind: 'op', label: label || '操作已处理' });
+    cards.push({ kind: 'op', label: label || t('card_done') });
   });
   return cards;
 }
@@ -1093,36 +1129,36 @@ function cardHTML(c) {
   if (c.kind === 'memo') {
     return '<div class="card-m"><div class="cm-h"><i class="mdot" style="background:' + color + '"></i><b>' + esc(c.title) + '</b>' + tag + '</div>' +
       (c.note ? '<p>' + esc(c.note) + '</p>' : '') +
-      '<span class="cm-kind">已存入备忘</span></div>';
+      '<span class="cm-kind">' + esc(t('card_memo')) + '</span></div>';
   }
   if (c.kind === 'todo') {
     return '<div class="card-m todo-c"><div class="cm-h"><i class="mdot" style="background:' + color + '"></i><b>' + esc(c.title) + '</b>' + tag + '</div>' +
-      (c.due ? '<p>' + esc(dueLabel(c.due)) + ' 到期</p>' : '') +
-      '<span class="cm-kind">已加入待办</span></div>';
+      (c.due ? '<p>' + esc(t('card_due', dueLabel(c.due))) + '</p>' : '') +
+      '<span class="cm-kind">' + esc(t('card_todo')) + '</span></div>';
   }
   if (c.kind === 'rec') {
     return '<div class="card-m rec-c' + (c.isIn ? ' in-c' : '') + '"><div class="cm-h"><i class="mdot" style="background:' + (c.isIn ? GREEN : '#C5A463') + '"></i><b>' + esc(c.title) + '</b>' + tag +
       '<span class="cm-amt ' + (c.isIn ? 'in' : 'out') + '">' + (c.isIn ? '+' : '-') + fmtAmt(c.amount) + '</span></div>' +
-      '<span class="cm-kind">已记入账本</span></div>';
+      '<span class="cm-kind">' + esc(t('card_rec')) + '</span></div>';
   }
   if (c.kind === 'tool') {
     return '<div class="card-m tool-c"><div class="cm-h"><svg width="13" height="13" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="2.2" stroke="#7D93A8" stroke-width="1.5"/><path d="M8 1.8v1.7M8 12.5v1.7M1.8 8h1.7M12.5 8h1.7M3.6 3.6l1.2 1.2M11.2 11.2l1.2 1.2M12.4 3.6l-1.2 1.2M4.8 11.2l-1.2 1.2" stroke="#7D93A8" stroke-width="1.5" stroke-linecap="round"/></svg><b style="font-weight:600;color:#5C6E80">' + esc(c.title) + '</b></div>' +
-      '<span class="cm-kind" style="margin-top:4px">联网检索</span></div>';
+      '<span class="cm-kind" style="margin-top:4px">' + esc(t('card_tool')) + '</span></div>';
   }
-  return '<div class="card-m todo-c"><div class="cm-h"><svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M2.5 7.5l3 3 6-7" stroke="#7C9885" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><b style="font-weight:600">' + esc(c.label || '已处理') + '</b></div></div>';
+  return '<div class="card-m todo-c"><div class="cm-h"><svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M2.5 7.5l3 3 6-7" stroke="#7C9885" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><b style="font-weight:600">' + esc(c.label || t('card_done')) + '</b></div></div>';
 }
 function onboardHTML() {
   return '<div class="onboard">' +
-    '<div class="ob-t"><svg viewBox="0 0 24 24"><g stroke="#CC785C" stroke-width="2.1" stroke-linecap="round" fill="none"><line x1="12" y1="2.6" x2="12" y2="21.4"/><line x1="2.6" y1="12" x2="21.4" y2="12"/><line x1="5.4" y1="5.4" x2="18.6" y2="18.6"/><line x1="18.6" y1="5.4" x2="5.4" y2="18.6"/></g></svg>开启 Aragon 智能体</div>' +
-    '<p>配置一个大模型后即可对话。我能帮你记待办、备忘、记账并自动分类，也能联网搜索资料、多步完成任务。</p>' +
-    '<button class="mini-btn" data-act="aicfg" style="align-self:flex-start">去配置</button></div>';
+    '<div class="ob-t"><svg viewBox="0 0 24 24"><g stroke="#CC785C" stroke-width="2.1" stroke-linecap="round" fill="none"><line x1="12" y1="2.6" x2="12" y2="21.4"/><line x1="2.6" y1="12" x2="21.4" y2="12"/><line x1="5.4" y1="5.4" x2="18.6" y2="18.6"/><line x1="18.6" y1="5.4" x2="5.4" y2="18.6"/></g></svg>' + esc(t('ag_onboard_t')) + '</div>' +
+    '<p>' + esc(t('ag_onboard_p')) + '</p>' +
+    '<button class="mini-btn" data-act="aicfg" style="align-self:flex-start">' + esc(t('ag_onboard_cta')) + '</button></div>';
 }
 function renderChat() {
   const el = $('#chat');
   let h = '';
   if (!defProfile()) h += onboardHTML();
   if (!S.chat.length && defProfile()) {
-    h += '<div class="msg-a">你好呀，我是你的智能体。想记什么、查什么，直接说。</div>';
+    h += '<div class="msg-a">' + esc(t('ag_hello')) + '</div>';
   }
   S.chat.slice(-80).forEach((m) => {
     if (m.role === 'user') {
@@ -1197,7 +1233,7 @@ function parseAgentOutput(raw) {
 async function agentTurn(userText) {
   const p = defProfile();
   if (!p) {
-    S.chat.push({ role: 'ai', text: '还没有配置大模型。点右上角齿轮完成配置，我就能开始工作啦。', ts: Date.now(), cards: [] });
+    S.chat.push({ role: 'ai', text: t('ag_no_profile'), ts: Date.now(), cards: [] });
     persist();
     renderChat();
     return;
@@ -1223,7 +1259,7 @@ async function agentTurn(userText) {
     } catch (e) {
       streamMsg = null;
       msg.streaming = false;
-      msg.text = '请求出错了：' + e.message + '\n请到 AI 配置里检查地址、凭证与模型名，或稍后再试。';
+      msg.text = t('ag_err', e.message);
       persist();
       renderChat();
       return;
@@ -1235,7 +1271,7 @@ async function agentTurn(userText) {
     if (parsed.tool) {
       msg.text = parsed.reply || msg.text;
       const q = (parsed.tool.args || {}).query || (parsed.tool.args || {}).url || parsed.tool.name;
-      msg.cards.push({ kind: 'tool', title: '正在检索：' + q });
+      msg.cards.push({ kind: 'tool', title: t('ag_searching', q) });
       persist();
       renderChat();
       const result = await runTool(parsed.tool);
@@ -1245,13 +1281,12 @@ async function agentTurn(userText) {
       messages.push({ role: 'assistant', content: raw });
       messages.push({
         role: 'user',
-        content: '工具 ' + parsed.tool.name + ' 执行结果：\n' + result.text.slice(0, 6000) +
-          '\n\n请基于以上结果继续：先用文字回答用户（可用 Markdown），如需把信息存入备忘/待办/账本，再在末尾输出 json 代码块。'
+        content: t('ag_tool_result', parsed.tool.name, result.text.slice(0, 6000))
       });
       continue;
     }
 
-    msg.text = parsed.reply || '（空响应）';
+    msg.text = parsed.reply || t('ag_empty_resp');
     if (parsed.actions) {
       msg.cards = msg.cards.concat(applyAgent(parsed.actions));
     }
@@ -1260,7 +1295,7 @@ async function agentTurn(userText) {
     renderAll();
     return;
   }
-  S.chat.push({ role: 'ai', text: '这个任务需要的步骤有点多，先到这里啦。可以把任务拆小一点再试。', ts: Date.now(), cards: [] });
+  S.chat.push({ role: 'ai', text: t('ag_too_many'), ts: Date.now(), cards: [] });
   persist();
   renderChat();
 }
@@ -1288,27 +1323,27 @@ const mmSheet = $('#mm-sheet');
 function renderMemoView() {
   const groups = {};
   S.memos.slice().sort((a, b) => b.createdAt - a.createdAt).forEach((m) => {
-    const g = m.catName || '未分类';
+    const g = m.catName || t('uncat');
     (groups[g] = groups[g] || []).push(m);
   });
   let h = '';
   Object.keys(groups).forEach((g) => {
     h += '<div class="memo-g"><div class="m-dh"><b><i class="mdot" style="display:inline-block;width:7px;height:7px;border-radius:50%;background:' + memoColor(g) + ';margin-right:7px;vertical-align:1px"></i>' + esc(g) + '</b>' +
-      '<span class="m-dsum">' + groups[g].length + ' 条</span></div><div class="list card">';
+      '<span class="m-dsum">' + esc(t('memo_cnt', groups[g].length)) + '</span></div><div class="list card">';
     groups[g].forEach((m) => {
       const d = new Date(m.createdAt);
-      const ds = (d.getMonth() + 1) + '月' + d.getDate() + '日';
+      const ds = fmtMD(d);
       h += '<div class="row m-row" data-mid="' + m.id + '">' +
         '<div class="rmain"><div class="ttl" style="font-size:14.5px">' + esc(m.title) + '</div>' +
         '<div class="meta">' + (m.note ? esc(m.note) + '<span class="sep">·</span>' : '') + ds + '</div>' +
         '</div>' +
-        '<button class="x-b" data-act="mdel" data-id="' + m.id + '" aria-label="删除"><svg viewBox="0 0 14 14" fill="none"><path d="M3 3l8 8M11 3l-8 8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>' +
+        '<button class="x-b" data-act="mdel" data-id="' + m.id + '" aria-label="' + esc(t('del')) + '"><svg viewBox="0 0 14 14" fill="none"><path d="M3 3l8 8M11 3l-8 8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>' +
         '</div>';
     });
     h += '</div></div>';
   });
   $('#memo-view-list').innerHTML = h ||
-    '<div class="empty"><h3>还没有备忘</h3><p>点右下角「记一条」，或让智能体帮你记。</p></div>';
+    '<div class="empty"><h3>' + esc(t('memo_empty_t')) + '</h3><p>' + esc(t('memo_empty_p')) + '</p></div>';
 }
 function openMMSheet() {
   $('#mm-title').value = '';
@@ -1330,7 +1365,7 @@ function saveMM() {
   });
   persist();
   renderAll();
-  toast('备忘已保存');
+  toast(t('toast_mm_save'));
   closeSheets();
 }
 function deleteMemo(id) {
@@ -1340,7 +1375,7 @@ function deleteMemo(id) {
   S.memos.splice(i, 1);
   persist();
   renderAll();
-  toast('已删除备忘', () => {
+  toast(t('toast_mm_del'), () => {
     S.memos.push(removed);
     persist();
     renderAll();
@@ -1357,13 +1392,13 @@ function openAISheet(p) {
   edAI = p || null;
   aiStyle = p ? p.style : 'openai';
   aiModelList = [];
-  $('#ai-lb').textContent = p ? '编辑配置' : '新增配置';
+  $('#ai-lb').textContent = p ? t('ai_edit_lb') : t('ai_new');
   $('#ai-name').value = p ? p.name : '';
   $('#ai-url').value = p ? p.baseUrl : AISTYLES[aiStyle].url;
   $('#ai-key').value = p ? p.apiKey : '';
   $('#ai-model').value = p ? p.model : '';
   $('#ai-headers').value = p ? (p.extraHeaders || '') : '';
-  $('#ai-save').textContent = p ? '保存修改' : '保存配置';
+  $('#ai-save').textContent = p ? t('ai_save_edit') : t('ai_save_new');
   $('#ai-save').disabled = true;
   $('#ai-def').hidden = !p || S.ai.def === p.id;
   $('#ai-del').hidden = !p;
@@ -1382,10 +1417,10 @@ function renderAIList() {
     '<div class="cat-row" data-act="aiedit" data-id="' + p.id + '">' +
     '<i class="ai-row-dot' + (S.ai.def === p.id ? ' on' : '') + '"></i>' +
     '<span>' + esc(p.name) + '</span>' +
-    '<span class="ai-badge">' + (AISTYLES[p.style] || {}).n + '</span>' +
+    '<span class="ai-badge">' + esc(aiStyleName(p.style)) + '</span>' +
     '<span class="cm">' + esc(p.model) + '</span>' +
     '</div>').join('');
-  $('#ai-list').innerHTML = rows || '<div class="cat-row" style="color:var(--mut)">还没有配置，先在下面新增一个吧</div>';
+  $('#ai-list').innerHTML = rows || '<div class="cat-row" style="color:var(--mut)">' + esc(t('ai_list_empty')) + '</div>';
 }
 function renderAIModels() {
   if (!aiModelList.length) { $('#ai-models').innerHTML = ''; return; }
@@ -1404,15 +1439,15 @@ async function doFetchModels() {
     apiKey: $('#ai-key').value.trim(),
     extraHeaders: $('#ai-headers').value.trim() || ''
   };
-  if (!p.baseUrl) { toast('请先填写 API 地址'); return; }
-  toast('正在获取模型列表…');
+  if (!p.baseUrl) { toast(t('ai_need_url')); return; }
+  toast(t('ai_fetching'));
   try {
     aiModelList = await fetchModels(p);
-    if (!aiModelList.length) toast('列表为空，请手填模型名');
-    else toast('获取到 ' + aiModelList.length + ' 个模型，点选即可');
+    if (!aiModelList.length) toast(t('ai_fetch_empty'));
+    else toast(t('ai_fetch_ok', aiModelList.length));
   } catch (e) {
     aiModelList = [];
-    toast('获取失败：' + e.message);
+    toast(t('ai_fetch_fail', e.message));
   }
   renderAIModels();
 }
@@ -1437,7 +1472,7 @@ function saveAI() {
   persist();
   renderChat();
   openAISheet(edAI);
-  toast('配置已保存');
+  toast(t('ai_saved'));
 }
 
 /* ---------- category sheet (todo) ---------- */
@@ -1449,8 +1484,8 @@ function openCatSheet() {
   editingCat = null;
   selColor = PALETTE[0];
   $('#cs-name').value = '';
-  $('#cs-lb').textContent = '新建分类';
-  $('#cs-save').textContent = '添加';
+  $('#cs-lb').textContent = t('cs_new');
+  $('#cs-save').textContent = t('cs_add');
   $('#cs-save').disabled = true;
   $('#cs-del').hidden = true;
   renderCatList();
@@ -1464,10 +1499,10 @@ function renderCatList() {
     return '<div class="cat-row">' +
       '<i class="dot" style="background:' + c.color + '"></i>' +
       '<span>' + esc(c.name) + '</span>' +
-      '<span class="ccnt">' + n + ' 项待办</span>' +
-      '<button class="ced" data-act="ce" data-id="' + c.id + '">编辑</button>' +
+      '<span class="ccnt">' + esc(t('cs_n_todo', n)) + '</span>' +
+      '<button class="ced" data-act="ce" data-id="' + c.id + '">' + esc(t('edit')) + '</button>' +
       '</div>';
-  }).join('') || '<div class="cat-row" style="color:var(--mut)">还没有分类</div>';
+  }).join('') || '<div class="cat-row" style="color:var(--mut)">' + esc(t('cs_empty')) + '</div>';
 }
 function renderSwatches() {
   $('#cs-swatches').innerHTML = PALETTE.map((c) =>
@@ -1498,7 +1533,7 @@ function deleteCat() {
   persist();
   renderAll();
   openCatSheet();
-  toast(moved ? '已删除分类，' + moved + ' 项移入未分类' : '已删除分类');
+  toast(moved ? t('toast_cat_del_moved', moved) : t('toast_cat_del'));
 }
 
 /* ---------- sheets common ---------- */
@@ -1514,6 +1549,13 @@ function closeSheets() {
     el.setAttribute('aria-hidden', 'true');
   });
   if (document.activeElement) document.activeElement.blur();
+}
+
+/* ---------- settings ---------- */
+function renderSetLang() {
+  document.querySelectorAll('#set-langs .chip').forEach((b) => {
+    b.classList.toggle('sel', b.dataset.id === LANG);
+  });
 }
 
 /* ---------- events ---------- */
@@ -1532,34 +1574,34 @@ document.addEventListener('click', (e) => {
     case 'filter': F.cat = id || 'all'; expandedId = null; renderAll(); break;
     case 'manage': openCatSheet(); break;
     case 'toggle': {
-      const t = S.tasks.find((x) => x.id === id);
-      if (!t) return;
-      t.done = !t.done;
-      t.doneAt = t.done ? Date.now() : null;
-      if (t.repeat && t.due) {
-        const nextDue = nextDueISO(t.due, t.repeat);
-        if (t.done) {
+      const tk = S.tasks.find((x) => x.id === id);
+      if (!tk) return;
+      tk.done = !tk.done;
+      tk.doneAt = tk.done ? Date.now() : null;
+      if (tk.repeat && tk.due) {
+        const nextDue = nextDueISO(tk.due, tk.repeat);
+        if (tk.done) {
           /* generate next occurrence, but never duplicate one that exists
              (e.g. the task was completed, undone, then completed again) */
           const exists = S.tasks.some((x) =>
-            x.id !== t.id && !x.done && x.title === t.title &&
-            x.repeat === t.repeat && x.due === nextDue);
+            x.id !== tk.id && !x.done && x.title === tk.title &&
+            x.repeat === tk.repeat && x.due === nextDue);
           if (!exists) {
             S.tasks.push({
-              id: uid(), title: t.title, note: t.note, catId: t.catId,
-              due: nextDue, repeat: t.repeat,
+              id: uid(), title: tk.title, note: tk.note, catId: tk.catId,
+              due: nextDue, repeat: tk.repeat,
               done: false, createdAt: Date.now(), doneAt: null
             });
-            toast('已完成，「' + t.title + '」已排到 ' + dueLabel(nextDue));
+            toast(t('toast_rep_next', tk.title, dueLabel(nextDue)));
           }
         } else {
           /* un-completing removes the auto-generated next occurrence so
              toggling back and forth never leaves duplicates */
           const k = S.tasks.findIndex((x) =>
-            !x.done && x.title === t.title && x.repeat === t.repeat && x.due === nextDue);
+            !x.done && x.title === tk.title && x.repeat === tk.repeat && x.due === nextDue);
           if (k >= 0) {
             S.tasks.splice(k, 1);
-            toast('已恢复未完成，下一期已撤销');
+            toast(t('toast_rep_undo'));
           }
         }
       }
@@ -1572,8 +1614,8 @@ document.addEventListener('click', (e) => {
       renderList();
       break;
     case 'edit': {
-      const t = S.tasks.find((x) => x.id === id);
-      if (t) openTaskSheet(t);
+        const tk = S.tasks.find((x) => x.id === id);
+        if (tk) openTaskSheet(tk);
       break;
     }
     case 'del': deleteTask(id); break;
@@ -1597,8 +1639,8 @@ document.addEventListener('click', (e) => {
       editingCat = c;
       selColor = c.color;
       $('#cs-name').value = c.name;
-      $('#cs-lb').textContent = '编辑分类';
-      $('#cs-save').textContent = '保存';
+      $('#cs-lb').textContent = t('cs_edit');
+      $('#cs-save').textContent = t('save');
       $('#cs-save').disabled = false;
       $('#cs-del').hidden = false;
       renderSwatches();
@@ -1622,7 +1664,7 @@ document.addEventListener('click', (e) => {
       persist();
       renderMoney();
       renderHub();
-      toast(r.reimb === 'done' ? '已到账 ' + fmtAmt(r.amount) + ' 元' : '已标记为' + (rstatOf(r) || {}).n);
+      toast(r.reimb === 'done' ? t('toast_reimb_done', fmtAmt(r.amount)) : t('toast_reimb_set', rstatName(r.reimb)));
       break;
     }
     case 'redit': {
@@ -1654,6 +1696,22 @@ document.addEventListener('click', (e) => {
     case 'madd': openMMSheet(); break;
     case 'mdel': deleteMemo(id); break;
 
+      /* settings */
+      case 'setopen':
+        renderSetLang();
+        openSheet($('#set-sheet'));
+        break;
+      case 'lang':
+        if (id !== LANG) {
+          setLang(id);
+          renderSetLang();
+          renderHeader();
+          renderAll();
+          setView(V);
+          toast(t('lang_changed'));
+        }
+        break;
+
     /* agent / AI */
     case 'aicfg': openAISheet(null); break;
     case 'aiedit': {
@@ -1681,7 +1739,7 @@ document.addEventListener('click', (e) => {
       S.chat = [];
       persist();
       renderChat();
-      toast('对话已清空');
+      toast(t('ag_cleared'));
       break;
     case 'link': {
       const u = btn.dataset.id || '';
@@ -1755,7 +1813,7 @@ $('#qa-in').addEventListener('keydown', (e) => {
   persist();
   renderAll();
   e.target.value = '';
-  toast('已添加「' + v + '」');
+  toast(t('toast_task_add', v));
 });
 
 /* empty-state CTAs */
@@ -1767,7 +1825,7 @@ $('#ai-eye').addEventListener('click', () => {
   const k = $('#ai-key');
   const show = k.type === 'password';
   k.type = show ? 'text' : 'password';
-  $('#ai-eye').setAttribute('aria-label', show ? '隐藏密钥' : '显示密钥');
+  $('#ai-eye').setAttribute('aria-label', show ? t('ai_hide_key') : t('ai_show_key'));
   $('#ai-eye').classList.toggle('on', show);
 });
 $('#ai-save').addEventListener('click', saveAI);
@@ -1777,7 +1835,7 @@ $('#ai-def').addEventListener('click', () => {
   persist();
   openAISheet(edAI);
   renderChat();
-  toast('已设为默认配置');
+  toast(t('ai_def_ok'));
 });
 $('#ai-del').addEventListener('click', () => {
   if (!edAI) return;
@@ -1787,7 +1845,7 @@ $('#ai-del').addEventListener('click', () => {
   persist();
   renderChat();
   openAISheet(null);
-  toast('配置已删除');
+  toast(t('ai_del_ok'));
 });
 ['#ai-name', '#ai-url', '#ai-model'].forEach((s) => {
   $(s).addEventListener('input', refreshAISave);
@@ -1820,18 +1878,18 @@ setInterval(renderHeader, 60000);
 
 /* ---- F3: repeat tasks ---- */
 const REPS = [
-  { v: null, l: '不重复' },
-  { v: 'daily', l: '每天' },
-  { v: 'weekly', l: '每周' },
-  { v: 'monthly', l: '每月' }
+  { v: null, l: 'r_none' },
+  { v: 'daily', l: 'r_daily' },
+  { v: 'weekly', l: 'r_weekly' },
+  { v: 'monthly', l: 'r_monthly' }
 ];
 function repLabel(v) {
   const r = REPS.find((x) => x.v === v);
-  return r ? r.l : '';
+  return r ? t(r.l) : '';
 }
 function renderRepeat() {
   $('#ts-repeat').innerHTML = REPS.map((r) =>
-    '<button class="chip s' + (selRepeat === r.v ? ' sel' : '') + '" data-rp="' + (r.v || '') + '">' + r.l + '</button>').join('');
+    '<button class="chip s' + (selRepeat === r.v ? ' sel' : '') + '" data-rp="' + (r.v || '') + '">' + esc(t(r.l)) + '</button>').join('');
 }
 function nextDueISO(due, rep) {
   const d = new Date(due + 'T00:00:00');
@@ -1875,8 +1933,8 @@ function renderStats() {
   /* month label reflects the month actually being viewed */
   const isCurM = M.month === todayISO().slice(0, 7);
   const [sy, sm] = M.month.split('-').map(Number);
-  const mLabel = isCurM ? '本月' : (sy + '年' + sm + '月');
-  $('#st-cats').previousElementSibling.textContent = '分类占比（' + mLabel + '支出）';
+  const mLabel = isCurM ? t('st_this_month') : fmtYM(sy, sm);
+  $('#st-cats').previousElementSibling.textContent = t('st_cat_share', mLabel);
 
   /* category bars */
   const byCat = {};
@@ -1889,10 +1947,10 @@ function renderStats() {
   $('#st-cats').innerHTML = arr.length ? arr.map(([k, v]) => {
     const c = RCATS.find((x) => x.k === k);
     const col = c ? c.c : '#B5B0A0';
-    return '<div class="st-brow"><span class="st-bl">' + esc(c ? c.n : '其他') + '</span>' +
+    return '<div class="st-brow"><span class="st-bl">' + esc(c ? rcatName(c.k) : t('rc_other')) + '</span>' +
       '<div class="st-btrack"><div class="st-bfill" style="width:' + Math.max(4, (v / max) * 100) + '%;background:' + col + '"></div></div>' +
       '<span class="st-bv">' + fmtAmt(v) + '</span></div>';
-  }).join('') : '<div class="st-none">本月暂无支出</div>';
+  }).join('') : '<div class="st-none">' + esc(t('st_no_spend')) + '</div>';
 
   /* 6-month trend */
   const months = stMonths6();
@@ -1916,15 +1974,15 @@ function renderStats() {
 function updateBudgetUI(out) {
   const b = S.budget && S.budget.monthly;
   const bar = $('#bud-bar'), fill = $('#bud-fill'), tip = $('#bud-tip');
-  if (!b) { bar.hidden = true; tip.textContent = '设置后会在账本页显示进度条'; return; }
+  if (!b) { bar.hidden = true; tip.textContent = t('bud_unset_tip'); return; }
   bar.hidden = false;
   const p = out / b;
   fill.style.width = Math.min(p, 1) * 100 + '%';
   fill.classList.toggle('warn', p >= 0.8 && p < 1);
   fill.classList.toggle('over', p >= 1);
   tip.textContent = p >= 1
-    ? '已超支 ' + fmtAmt(out - b) + ' 元'
-    : '已用 ' + Math.round(p * 100) + '% · 剩余 ' + fmtAmt(b - out) + ' 元';
+      ? t('bud_over_tip', fmtAmt(out - b))
+      : t('bud_tip', Math.round(p * 100), fmtAmt(b - out));
 }
 $('#bud-save').addEventListener('click', () => {
   const v = parseFloat($('#bud-in').value);
@@ -1932,7 +1990,7 @@ $('#bud-save').addEventListener('click', () => {
   persist();
   renderStats();
   renderMoney();
-  toast(S.budget.monthly ? '月度预算已设为 ' + fmtAmt(S.budget.monthly) + ' 元' : '预算已关闭');
+  toast(S.budget.monthly ? t('toast_bud_set', fmtAmt(S.budget.monthly)) : t('toast_bud_off'));
 });
 
 /* ---- F2: backup & restore ---- */
@@ -1958,9 +2016,9 @@ $('#exp-btn').addEventListener('click', async () => {
     a.click();
     a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 3000);
-    toast(copied ? '备份已下载，并复制到剪贴板' : '备份文件已下载');
+    toast(copied ? t('toast_exp_both') : t('toast_exp_dl'));
   } catch (e) {
-    toast(copied ? '备份已复制到剪贴板' : '导出失败：' + e.message);
+    toast(copied ? t('toast_exp_clip') : t('toast_exp_fail', e.message));
   }
 });
 /* two-step import confirm (native confirm() is unavailable in this WebView) */
@@ -1969,19 +2027,19 @@ $('#imp-btn').addEventListener('click', () => {
   const btn = $('#imp-btn');
   if (Date.now() < impArmed) {
     impArmed = 0;
-    btn.textContent = '导入恢复';
+    btn.textContent = t('imp_btn');
     btn.classList.remove('danger');
     $('#imp-file').click();
     return;
   }
   impArmed = Date.now() + 3000;
-  btn.textContent = '再点一次确认导入';
+  btn.textContent = t('imp_confirm_btn');
   btn.classList.add('danger');
-  toast('导入会覆盖当前数据，3 秒内再点一次确认');
+  toast(t('imp_confirm_toast'));
   setTimeout(() => {
     if (Date.now() >= impArmed) {
       impArmed = 0;
-      btn.textContent = '导入恢复';
+      btn.textContent = t('imp_btn');
       btn.classList.remove('danger');
     }
   }, 3100);
@@ -1993,7 +2051,7 @@ $('#imp-file').addEventListener('change', (e) => {
   rd.onload = () => {
     try {
       const j = JSON.parse(rd.result);
-      if (j.app !== 'AragonTask' || !Array.isArray(j.tasks)) throw new Error('不是有效的备份文件');
+      if (j.app !== 'AragonTask' || !Array.isArray(j.tasks)) throw new Error(t('imp_invalid'));
       S.tasks = j.tasks;
       S.records = Array.isArray(j.records) ? j.records : [];
       S.memos = Array.isArray(j.memos) ? j.memos : [];
@@ -2006,9 +2064,9 @@ $('#imp-file').addEventListener('change', (e) => {
       persist();
       renderAll();
       closeSheets();
-      toast('导入完成：' + S.tasks.length + ' 任务 · ' + S.records.length + ' 账目 · ' + S.memos.length + ' 备忘');
+      toast(t('toast_imp_ok', S.tasks.length, S.records.length, S.memos.length));
     } catch (err) {
-      toast('导入失败：' + err.message);
+      toast(t('toast_imp_fail', err.message));
     }
     e.target.value = '';
   };
@@ -2033,29 +2091,29 @@ $('#sr-open').addEventListener('click', () => {
   openSheet($('#search-sheet'));
   const i = $('#sr-in');
   i.value = '';
-  $('#sr-res').innerHTML = '<div class="st-none">输入关键词试试</div>';
+  $('#sr-res').innerHTML = '<div class="st-none">' + esc(t('sr_hint')) + '</div>';
   setTimeout(() => i.focus(), 380);
 });
 let srTimer = 0;
 function srRender(q) {
   q = q.trim().toLowerCase();
   const box = $('#sr-res');
-  if (!q) { box.innerHTML = '<div class="st-none">输入关键词试试</div>'; return; }
+  if (!q) { box.innerHTML = '<div class="st-none">' + esc(t('sr_hint')) + '</div>'; return; }
   const hit = (s) => String(s || '').toLowerCase().indexOf(q) >= 0;
   const ts = S.tasks.filter((t) => hit(t.title) || hit(t.note)).slice(0, 8);
   const ms = S.memos.filter((m) => hit(m.title) || hit(m.note) || hit(m.catName)).slice(0, 8);
   const rc = S.records.filter((r) => hit(r.title) || hit(fmtAmt(r.amount))).slice(0, 8);
   let h = '';
-  if (ts.length) h += '<div class="lb">待办</div>' + ts.map((t) =>
+  if (ts.length) h += '<div class="lb">' + esc(t('sr_todo')) + '</div>' + ts.map((t) =>
     '<button class="sr-item" data-srk="task" data-id="' + t.id + '"><i class="mdot" style="background:' + (t.done ? '#B5B0A0' : '#CC785C') + '"></i><span>' + esc(t.title) + '</span></button>').join('');
-  if (ms.length) h += '<div class="lb">备忘</div>' + ms.map((m) =>
+  if (ms.length) h += '<div class="lb">' + esc(t('sr_memo')) + '</div>' + ms.map((m) =>
     '<button class="sr-item" data-srk="memo" data-id="' + m.id + '"><i class="mdot" style="background:#D4A27F"></i><span>' + esc(m.title) + '</span></button>').join('');
-  if (rc.length) h += '<div class="lb">账目</div>' + rc.map((r) => {
+  if (rc.length) h += '<div class="lb">' + esc(t('sr_rec')) + '</div>' + rc.map((r) => {
     const c = RCATS.find((x) => x.k === r.cat);
     return '<button class="sr-item" data-srk="rec" data-id="' + r.id + '"><i class="mdot" style="background:' + ((c || {}).c || '#B5B0A0') + '"></i><span>' +
-      esc(r.title || '账目') + '　' + (r.type === 'out' ? '−' : '+') + fmtAmt(r.amount) + '</span></button>';
+      esc(r.title || t('sr_rec_default')) + '　' + (r.type === 'out' ? '−' : '+') + fmtAmt(r.amount) + '</span></button>';
   }).join('');
-  box.innerHTML = h || '<div class="st-none">没有找到与「' + esc(q) + '」相关的内容</div>';
+  box.innerHTML = h || '<div class="st-none">' + esc(t('sr_none', q)) + '</div>';
 }
 $('#sr-in').addEventListener('input', (e) => {
   clearTimeout(srTimer);

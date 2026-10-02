@@ -4,7 +4,7 @@
 
 AragonTask keeps your entire life on your device. Tasks, spending, notes and an AI assistant live in a single lightweight app with no accounts, no cloud sync and no analytics. Everything is stored in local storage on your phone, and you can export a full backup anytime.
 
-> The UI is currently in Chinese (zh-CN). The codebase and this README are in English.
+> The UI defaults to English, with Simplified Chinese (zh-CN) available in **Settings → Language**. The codebase and this README are in English.
 
 ---
 
@@ -21,7 +21,7 @@ AragonTask keeps your entire life on your device. Tasks, spending, notes and an 
 - **🤖 AI 智能体**（可选，自带 Key）：对话即可增删改查待办、备忘与账本，支持 OpenAI / Anthropic / 自定义接口，还能联网搜索与读取网页
 - **🔍 更多**：全局搜索、一键备份 / 恢复、硬件返回键原生体验
 
-> 应用界面为中文（zh-CN），代码与本 README 为英文。
+> 应用界面默认英文，可在「设置 → 语言」切换简体中文；代码与本 README 为英文。
 
 ---
 
@@ -68,6 +68,7 @@ AragonTask keeps your entire life on your device. Tasks, spending, notes and an 
 - SSE streaming with a non-streaming fallback; works through the native network bridge on Android and plain `fetch` in browsers
 
 ### 🔍 More
+- **English / 简体中文** — the UI ships in English by default; switch to Simplified Chinese in Settings (gear icon in the header), persisted on device
 - **Global search** across todos, memos and records with jump-to-item highlighting
 - **Backup & restore** — one-tap JSON export (`aragontask-backup-YYYY-MM-DD.json`, download or clipboard) and confirmed import (AI keys are never exported)
 - Hardware back button handled like a native app: close sheet → back to hub → exit
@@ -93,7 +94,7 @@ The script runs aapt2 → javac → d8 → zipalign → apksigner, auto-generate
 ## Architecture
 
 - **`app/src/.../MainActivity.java`** — a single-Activity WebView shell. Loads the bundled web app from assets and exposes a `AndroidNet` JavaScript bridge: `request` / `stream` (SSE) for HTTP, `openUrl` for external links, `exitApp` for the back-button flow.
-- **`app/assets/`** — the entire UI: `index.html` + `app.js` + `app.css` (no framework, no dependencies). Falls back to standard `fetch` when the native bridge is absent, so the UI also runs in a desktop browser.
+- **`app/assets/`** — the entire UI: `index.html` + `i18n.js` (en/zh dictionaries, English by default) + `app.js` + `app.css` (no framework, no dependencies). Falls back to standard `fetch` when the native bridge is absent, so the UI also runs in a desktop browser.
 - **Data** — a single JSON document in localStorage under `aragontask.v1` (migrated transparently from the legacy `terra.todos.v1` key). No network calls except the AI agent you configure.
 
 ## Privacy
@@ -106,4 +107,4 @@ The script runs aapt2 → javac → d8 → zipalign → apksigner, auto-generate
 
 - Platform: Android 7.0+ (API 24+)
 - Current version: 1.6
-- Language: Java (shell) + vanilla HTML/CSS/JS (UI), UI locale zh-CN
+- Language: Java (shell) + vanilla HTML/CSS/JS (UI), UI locale en (default) / zh-CN via in-app setting

@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
@@ -28,8 +28,11 @@
         <div class="d1" id="hd-date"></div>
         <div class="d2" id="hd-hi"></div>
       </div>
-      <button class="icon-btn sr-open" id="sr-open" aria-label="搜索">
+      <button class="icon-btn sr-open" id="sr-open" aria-label="Search" data-i18n-al="search_aria">
         <svg viewBox="0 0 18 18" fill="none"><circle cx="8" cy="8" r="5.4" stroke="currentColor" stroke-width="1.8"/><path d="M12.2 12.2L16 16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      </button>
+      <button class="icon-btn" id="set-open" aria-label="Settings" data-i18n-al="set_aria" data-act="setopen">
+        <svg viewBox="0 0 18 18" fill="none"><path d="M2.5 5h7M13.5 5h2M2.5 13h2.5M8.5 13h7" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><circle cx="10.5" cy="5" r="2.1" stroke="currentColor" stroke-width="1.7"/><circle cx="6" cy="13" r="2.1" stroke="currentColor" stroke-width="1.7"/></svg>
       </button>
     </div>
   </header>
@@ -48,8 +51,8 @@
         </svg>
       </div>
       <div class="hh-t">
-        <b>Aragon 智能体</b>
-        <p>对话即可增删改查待办、备忘与账本，还能联网检索资料</p>
+        <b data-i18n="hub_agent_t">Aragon Agent</b>
+        <p data-i18n="hub_agent_p">Chat to manage todos, memos and the ledger — or search the web</p>
       </div>
       <svg class="hh-go" viewBox="0 0 16 16" fill="none"><path d="M6 3l5 5-5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -59,48 +62,48 @@
         <div class="hc-ic" style="--c:#CC785C">
           <svg viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="7.2" stroke="currentColor" stroke-width="1.7"/><path d="M6.8 10.2l2.2 2.2 4.2-4.6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </div>
-        <b>待办任务</b>
+        <b data-i18n="nav_todo">Todos</b>
         <span id="hub-todo">…</span>
       </button>
       <button class="hub-c card" data-act="view" data-id="money">
         <div class="hc-ic" style="--c:#C5A463">
           <svg viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="7.2" stroke="currentColor" stroke-width="1.7"/><path d="M7 7l6 6M13 7l-6 6M8 7h4M8 13h4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
         </div>
-        <b>记账本</b>
+        <b data-i18n="nav_money">Ledger</b>
         <span id="hub-money">…</span>
       </button>
       <button class="hub-c card" data-act="view" data-id="memo">
         <div class="hc-ic" style="--c:#7C9885">
           <svg viewBox="0 0 20 20" fill="none"><rect x="4" y="3.2" width="12" height="13.6" rx="2" stroke="currentColor" stroke-width="1.7"/><path d="M7.2 7.5h5.6M7.2 10.5h5.6M7.2 13.5h3.4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
         </div>
-        <b>备忘录</b>
+        <b data-i18n="nav_memo">Memos</b>
         <span id="hub-memo">…</span>
       </button>
       <button class="hub-c card" data-act="view" data-id="agent2">
         <div class="hc-ic" style="--c:#7D93A8">
           <svg viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="2.4" stroke="currentColor" stroke-width="1.6"/><path d="M10 2.6v2.2M10 15.2v2.2M2.6 10h2.2M15.2 10h2.2M4.8 4.8l1.5 1.5M13.7 13.7l1.5 1.5M15.2 4.8l-1.5 1.5M6.3 13.7l-1.5 1.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
         </div>
-        <b>AI 配置</b>
-        <span>模型与凭证</span>
+        <b data-i18n="nav_aicfg">AI Setup</b>
+        <span data-i18n="hub_aicfg_sub">Models &amp; keys</span>
       </button>
     </div>
 
-    <div class="hub-foot">试试对智能体说：「帮我记一笔午饭 25 元」或「查一下明天杭州天气」</div>
+    <div class="hub-foot" data-i18n="hub_foot">Try: "log a ¥25 lunch" or "will it rain tomorrow?"</div>
   </div>
 
   <!-- ================= TODO VIEW ================= -->
   <div id="view-todo" hidden>
     <div class="view-head">
-      <button class="icon-btn back" data-act="home" aria-label="返回">
+      <button class="icon-btn back" data-act="home" aria-label="Back" data-i18n-al="back_aria">
         <svg viewBox="0 0 16 16" fill="none"><path d="M10 3L5 8l5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </button>
-      <b>待办任务</b>
+      <b data-i18n="nav_todo">Todos</b>
     </div>
 
     <div class="qa card">
       <svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-      <input id="qa-in" placeholder="快速添加任务，回车保存" maxlength="120" autocomplete="off">
-      <button class="qa-chip" id="qa-today" aria-label="默认记到今天">今天</button>
+      <input id="qa-in" placeholder="Add a task, press Enter to save" data-i18n-ph="qa_ph" maxlength="120" autocomplete="off">
+      <button class="qa-chip" id="qa-today" aria-label="Due today by default" data-i18n-al="qa_today_aria" data-i18n="qa_today">Today</button>
     </div>
 
     <section class="hero card">
@@ -109,7 +112,7 @@
         <circle class="ring-fg" cx="31" cy="31" r="26" id="ring"/>
       </svg>
       <div class="hero-t">
-        <div class="ht-label">今日进度</div>
+        <div class="ht-label" data-i18n="hero_label">Today's progress</div>
         <div class="ht-num"><span id="hero-done">0</span><span class="ht-sep"> / </span><span id="hero-all">0</span></div>
         <div class="ht-sub" id="hero-sub"></div>
       </div>
@@ -117,18 +120,18 @@
 
     <nav class="chips" id="chips"></nav>
 
-    <div class="sec"><span>待办</span><span class="cnt" id="todo-cnt"></span><i class="ln"></i></div>
+    <div class="sec"><span data-i18n="sec_todo">Todos</span><span class="cnt" id="todo-cnt"></span><i class="ln"></i></div>
     <div class="list card" id="list"></div>
 
     <div class="empty" id="empty" hidden>
-      <h3 id="empty-t">一切安好</h3>
+      <h3 id="empty-t" data-i18n="empty_ok">All clear</h3>
       <p id="empty-p"></p>
-      <button class="empty-cta" id="empty-cta">添加第一个任务</button>
+      <button class="empty-cta" id="empty-cta" data-i18n="empty_cta">Add your first task</button>
     </div>
 
     <div class="sec sec-btn-wrap">
       <button class="sec-btn" id="done-toggle">
-        <span>已完成</span><span class="cnt" id="done-cnt"></span>
+        <span data-i18n="done_sec">Completed</span><span class="cnt" id="done-cnt"></span>
         <svg viewBox="0 0 16 16" fill="none"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </button>
       <i class="ln"></i>
@@ -139,36 +142,36 @@
   <!-- ================= MONEY VIEW ================= -->
   <div id="view-money" hidden>
     <div class="view-head">
-      <button class="icon-btn back" data-act="home" aria-label="返回">
+      <button class="icon-btn back" data-act="home" aria-label="Back" data-i18n-al="back_aria">
         <svg viewBox="0 0 16 16" fill="none"><path d="M10 3L5 8l5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </button>
-      <b>记账本</b>
+      <b data-i18n="nav_money">Ledger</b>
     </div>
 
     <section class="hero card m-hero">
       <div class="mh-main">
-        <div class="ht-label" id="m-lb">本月支出</div>
-        <div class="mh-num"><span id="m-out">0</span><span class="mh-cur">元</span></div>
+        <div class="ht-label" id="m-lb">Spent this month</div>
+        <div class="mh-num"><span id="m-out">0</span><span class="mh-cur" data-i18n="cur_unit">CNY</span></div>
         <div class="ht-sub" id="m-sub"></div>
         <div class="bud-mini" id="bud-mini" hidden><div class="bud-fill" id="bud-mini-fill"></div></div>
       </div>
       <div class="m-hero-side">
         <button class="reimb-chip" id="reimb-chip" data-act="mreimb">
-          <span class="rc-l">待报销</span>
+          <span class="rc-l" data-i18n="reimb_lb">To reimburse</span>
           <span class="rc-v" id="reimb-sum">¥0</span>
         </button>
-        <button class="stats-btn" id="stats-btn" aria-label="统计与数据">
+        <button class="stats-btn" id="stats-btn" aria-label="Stats &amp; data" data-i18n-al="stats_aria">
           <svg viewBox="0 0 18 18" fill="none"><path d="M3 15V9M9 15V3M15 15v-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
         </button>
       </div>
     </section>
 
     <div class="m-nav">
-      <button id="m-prev" data-act="mprev" aria-label="上月">
+      <button id="m-prev" data-act="mprev" aria-label="Previous month" data-i18n-al="prev_m_aria">
         <svg viewBox="0 0 16 16" fill="none"><path d="M10 3L5 8l5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </button>
       <div class="m-month" id="m-month"></div>
-      <button id="m-next" data-act="mnext" aria-label="下月">
+      <button id="m-next" data-act="mnext" aria-label="Next month" data-i18n-al="next_m_aria">
         <svg viewBox="0 0 16 16" fill="none"><path d="M6 3l5 5-5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </button>
     </div>
@@ -176,9 +179,9 @@
     <nav class="chips" id="m-chips"></nav>
 
     <div class="empty" id="m-empty" hidden>
-      <h3 id="m-empty-t">还没有账目</h3>
-      <p id="m-empty-p">记下第一笔，看看钱都去哪儿了。</p>
-      <button class="empty-cta" id="m-empty-cta">记第一笔</button>
+      <h3 id="m-empty-t" data-i18n="m_empty">No records yet</h3>
+      <p id="m-empty-p" data-i18n="m_empty_p">Log the first one and see where the money goes.</p>
+      <button class="empty-cta" id="m-empty-cta" data-i18n="m_empty_cta">Add first record</button>
     </div>
 
     <div id="m-groups"></div>
@@ -187,11 +190,11 @@
   <!-- ================= MEMO VIEW ================= -->
   <div id="view-memo" hidden>
     <div class="view-head">
-      <button class="icon-btn back" data-act="home" aria-label="返回">
+      <button class="icon-btn back" data-act="home" aria-label="Back" data-i18n-al="back_aria">
         <svg viewBox="0 0 16 16" fill="none"><path d="M10 3L5 8l5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </button>
-      <b>备忘录</b>
-      <button class="icon-btn mh-add" data-act="madd" aria-label="手动添加" style="margin-left:auto">
+      <b data-i18n="nav_memo">Memos</b>
+      <button class="icon-btn mh-add" data-act="madd" aria-label="Add manually" data-i18n-al="mm_add_aria" style="margin-left:auto">
         <svg viewBox="0 0 16 16" fill="none"><path d="M8 3.5v9M3.5 8h9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
       </button>
     </div>
@@ -201,15 +204,15 @@
   <!-- ================= AGENT VIEW ================= -->
   <div id="view-agent" hidden>
     <div class="view-head">
-      <button class="icon-btn back" data-act="home" aria-label="返回">
+      <button class="icon-btn back" data-act="home" aria-label="Back" data-i18n-al="back_aria">
         <svg viewBox="0 0 16 16" fill="none"><path d="M10 3L5 8l5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </button>
-      <b>Aragon 智能体</b>
+      <b data-i18n="ag_title">Aragon Agent</b>
       <div class="mt-acts" style="margin-left:auto">
-        <button class="icon-btn" data-act="aicfg" aria-label="AI 配置">
+        <button class="icon-btn" data-act="aicfg" aria-label="AI setup" data-i18n-al="ag_cfg_aria">
           <svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="2.2" stroke="currentColor" stroke-width="1.5"/><path d="M8 1.8v1.7M8 12.5v1.7M1.8 8h1.7M12.5 8h1.7M3.6 3.6l1.2 1.2M11.2 11.2l1.2 1.2M12.4 3.6l-1.2 1.2M4.8 11.2l-1.2 1.2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
         </button>
-        <button class="icon-btn" data-act="clearchat" aria-label="清空对话">
+        <button class="icon-btn" data-act="clearchat" aria-label="Clear chat" data-i18n-al="ag_clear_aria">
           <svg viewBox="0 0 16 16" fill="none"><path d="M3 4.5h10M6.5 4.5V3h3v1.5M4.5 4.5l.7 8.5h5.6l.7-8.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </button>
       </div>
@@ -218,8 +221,8 @@
     <div class="chat-wrap">
       <div class="chat-scroll" id="chat"></div>
       <div class="composer">
-        <textarea id="chat-in" placeholder="让智能体记事、记账、查资料…" maxlength="500" rows="1" autocomplete="off"></textarea>
-        <button class="send-b" id="chat-send" aria-label="发送">
+        <textarea id="chat-in" placeholder="Ask the agent to take notes, log spending, look things up…" data-i18n-ph="ag_ph" maxlength="500" rows="1" autocomplete="off"></textarea>
+        <button class="send-b" id="chat-send" aria-label="Send" data-i18n-al="ag_send_aria">
           <svg viewBox="0 0 20 20" fill="none"><path d="M10 16V4M5 9l5-5 5 5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </button>
       </div>
@@ -227,13 +230,13 @@
   </div>
 
   <div class="spacer" id="spacer"></div>
-  <footer>AragonTask · 数据仅存本机</footer>
+  <footer>AragonTask · <span data-i18n="app_foot">Data stays on this device</span></footer>
 
-  <button class="fab" id="fab" aria-label="新增">
+  <button class="fab" id="fab" aria-label="Add" data-i18n-al="fab_aria">
     <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
       <path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
     </svg>
-    <span id="fab-t">新任务</span>
+    <span id="fab-t">New task</span>
   </button>
 </div>
 
@@ -242,137 +245,137 @@
 <!-- task sheet -->
 <section class="sheet" id="task-sheet" aria-hidden="true">
   <div class="grab"></div>
-  <h2 class="sh" id="ts-h">新任务</h2>
-  <input class="t-title" id="ts-title" placeholder="想做点什么？" maxlength="60" autocomplete="off">
-  <textarea class="t-note" id="ts-note" rows="2" placeholder="备注，可选"></textarea>
-  <div class="lb">分类</div>
+  <h2 class="sh" id="ts-h">New task</h2>
+  <input class="t-title" id="ts-title" placeholder="What needs doing?" data-i18n-ph="ts_title_ph" maxlength="60" autocomplete="off">
+  <textarea class="t-note" id="ts-note" rows="2" placeholder="Note, optional" data-i18n-ph="ts_note_ph"></textarea>
+  <div class="lb" data-i18n="lb_cat">Category</div>
   <div class="chips-in" id="ts-cats"></div>
-  <div class="lb">日期</div>
+  <div class="lb" data-i18n="lb_date">Date</div>
   <div class="chips-in" id="ts-dates"></div>
-  <div class="lb" style="margin-top:14px">重复</div>
+  <div class="lb" style="margin-top:14px" data-i18n="lb_repeat">Repeat</div>
   <div class="chips-in" id="ts-repeat"></div>
   <input type="date" id="ts-date-input" class="dpick" tabindex="-1">
-  <button class="save" id="ts-save" disabled>保存</button>
-  <button class="ghost-del" id="ts-del" hidden>删除此任务</button>
+  <button class="save" id="ts-save" disabled data-i18n="save">Save</button>
+  <button class="ghost-del" id="ts-del" hidden data-i18n="ts_del">Delete this task</button>
 </section>
 
 <!-- record sheet -->
 <section class="sheet" id="rec-sheet" aria-hidden="true">
   <div class="grab"></div>
-  <h2 class="sh" id="rs-h">记一笔</h2>
+  <h2 class="sh" id="rs-h">Add record</h2>
   <div class="type-seg" id="rs-type">
-    <button class="ts-b on" data-act="rtype" data-id="out">支出</button>
-    <button class="ts-b" data-act="rtype" data-id="in">收入</button>
+    <button class="ts-b on" data-act="rtype" data-id="out" data-i18n="rt_out">Expense</button>
+    <button class="ts-b" data-act="rtype" data-id="in" data-i18n="rt_in">Income</button>
   </div>
   <div class="amt-row">
     <span class="amt-cur">¥</span>
     <input id="rs-amt" inputmode="decimal" placeholder="0.00" maxlength="12" autocomplete="off">
   </div>
-  <input class="t-title" id="rs-title" placeholder="买什么了？可选" maxlength="30" autocomplete="off">
+  <input class="t-title" id="rs-title" placeholder="What was it? Optional" data-i18n-ph="rs_title_ph" maxlength="30" autocomplete="off">
   <div id="rs-catwrap">
-    <div class="lb">分类</div>
+    <div class="lb" data-i18n="lb_cat">Category</div>
     <div class="chips-in" id="rs-cats"></div>
   </div>
-  <div class="lb">日期</div>
+  <div class="lb" data-i18n="lb_date">Date</div>
   <div class="chips-in" id="rs-dates"></div>
   <div class="chips-in" style="margin-top:2px">
     <input type="date" id="rs-date-input" class="dpick" tabindex="-1">
   </div>
   <label class="sw-row" id="rs-reimbrow">
-    <span>这笔需要报销</span>
+    <span data-i18n="rs_reimb_lb">This one needs reimbursement</span>
     <input type="checkbox" id="rs-reimb"><i class="tgl"></i>
   </label>
-  <button class="save" id="rs-save" disabled>保存</button>
-  <button class="ghost-del" id="rs-del" hidden>删除此记录</button>
+  <button class="save" id="rs-save" disabled data-i18n="save">Save</button>
+  <button class="ghost-del" id="rs-del" hidden data-i18n="rs_del">Delete this record</button>
 </section>
 
 <!-- manual memo sheet -->
 <section class="sheet" id="mm-sheet" aria-hidden="true">
   <div class="grab"></div>
-  <h2 class="sh">记一条备忘</h2>
-  <input class="t-title" id="mm-title" placeholder="备忘标题" maxlength="40" autocomplete="off">
-  <textarea class="t-note" id="mm-note" rows="2" placeholder="补充内容，可选"></textarea>
-  <input class="f-in" id="mm-cat" placeholder="分类，留空为未分类" maxlength="8" autocomplete="off">
-  <button class="save" id="mm-save" disabled>保存</button>
+  <h2 class="sh" data-i18n="mm_new">New memo</h2>
+  <input class="t-title" id="mm-title" placeholder="Memo title" data-i18n-ph="mm_title_ph" maxlength="40" autocomplete="off">
+  <textarea class="t-note" id="mm-note" rows="2" placeholder="Details, optional" data-i18n-ph="mm_note_ph"></textarea>
+  <input class="f-in" id="mm-cat" placeholder="Category, blank = uncategorized" data-i18n-ph="mm_cat_ph" maxlength="8" autocomplete="off">
+  <button class="save" id="mm-save" disabled data-i18n="save">Save</button>
 </section>
 
 <!-- AI config sheet -->
 <section class="sheet" id="ai-sheet" aria-hidden="true">
   <div class="grab"></div>
-  <h2 class="sh">AI 配置</h2>
+  <h2 class="sh" data-i18n="ai_title">AI Setup</h2>
   <div class="cat-list" id="ai-list"></div>
-  <div class="lb" id="ai-lb">新增配置</div>
-  <input class="f-in" id="ai-name" placeholder="配置名称，如 我的 OpenAI" maxlength="20" autocomplete="off">
+  <div class="lb" id="ai-lb">New profile</div>
+  <input class="f-in" id="ai-name" placeholder="Profile name, e.g. My OpenAI" data-i18n-ph="ai_name_ph" maxlength="20" autocomplete="off">
   <div class="type-seg" id="ai-style" style="margin-top:12px">
     <button class="ts-b on" data-act="aistyle" data-id="openai">OpenAI</button>
     <button class="ts-b" data-act="aistyle" data-id="anthropic">Anthropic</button>
-    <button class="ts-b" data-act="aistyle" data-id="custom">自定义</button>
+    <button class="ts-b" data-act="aistyle" data-id="custom" data-i18n="ai_custom">Custom</button>
   </div>
-  <input class="f-in" id="ai-url" placeholder="API 地址" autocomplete="off" inputmode="url">
+  <input class="f-in" id="ai-url" placeholder="API URL" data-i18n-ph="ai_url_ph" autocomplete="off" inputmode="url">
   <div class="key-row">
-    <input class="f-in" id="ai-key" type="password" placeholder="API Key（凭证）" autocomplete="off">
-    <button class="eye" id="ai-eye" aria-label="显示密钥">
+    <input class="f-in" id="ai-key" type="password" placeholder="API key" data-i18n-ph="ai_key_ph" autocomplete="off">
+    <button class="eye" id="ai-eye" aria-label="Show key" data-i18n-al="ai_show_key">
       <svg viewBox="0 0 20 20" fill="none"><path d="M2.5 10S5.8 4.8 10 4.8 17.5 10 17.5 10 14.2 15.2 10 15.2 2.5 10 2.5 10z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><circle cx="10" cy="10" r="2.4" stroke="currentColor" stroke-width="1.6"/></svg>
     </button>
   </div>
-  <div class="lb">模型</div>
+  <div class="lb" data-i18n="lb_model">Model</div>
   <div class="model-row">
-    <input class="f-in" id="ai-model" placeholder="模型名" autocomplete="off" style="flex:1">
-    <button class="mini-btn" data-act="aifetch">获取列表</button>
+    <input class="f-in" id="ai-model" placeholder="Model name" data-i18n-ph="ai_model_ph" autocomplete="off" style="flex:1">
+    <button class="mini-btn" data-act="aifetch" data-i18n="ai_fetch">Fetch list</button>
   </div>
   <div class="chips-in" id="ai-models"></div>
-  <input class="f-in" id="ai-headers" placeholder='额外请求头 JSON，可选' autocomplete="off">
-  <button class="save" id="ai-save" disabled>保存配置</button>
+  <input class="f-in" id="ai-headers" placeholder="Extra headers JSON, optional" data-i18n-ph="ai_headers_ph" autocomplete="off">
+  <button class="save" id="ai-save" disabled data-i18n="ai_save_new">Save profile</button>
   <div class="ai-acts">
-    <button class="ghost-def" id="ai-def" hidden>设为默认</button>
-    <button class="ghost-del" id="ai-del" hidden style="width:100%">删除此配置</button>
+    <button class="ghost-def" id="ai-def" hidden data-i18n="ai_def">Set as default</button>
+    <button class="ghost-del" id="ai-del" hidden style="width:100%" data-i18n="ai_del">Delete this profile</button>
   </div>
-  <div class="cs-tip">配置保存在本机，仅在请求你填写的地址时使用。</div>
+  <div class="cs-tip" data-i18n="ai_tip">Profiles stay on this device and are only used for the URL you enter.</div>
 </section>
 
 <!-- category sheet -->
 <section class="sheet" id="cat-sheet" aria-hidden="true">
   <div class="grab"></div>
-  <h2 class="sh">分类管理</h2>
+  <h2 class="sh" data-i18n="cs_title">Manage categories</h2>
   <div class="cat-list" id="cs-list"></div>
-  <div class="lb" id="cs-lb">新建分类</div>
-  <input class="cs-name" id="cs-name" placeholder="分类名称" maxlength="8" autocomplete="off">
+  <div class="lb" id="cs-lb">New category</div>
+  <input class="cs-name" id="cs-name" placeholder="Category name" data-i18n-ph="cs_name_ph" maxlength="8" autocomplete="off">
   <div class="swatches" id="cs-swatches"></div>
-  <button class="save" id="cs-save" disabled>添加</button>
-  <button class="ghost-del" id="cs-del" hidden>删除此分类</button>
-  <div class="cs-tip" id="cs-tip">删除分类后，其中的任务会归入「未分类」</div>
+  <button class="save" id="cs-save" disabled data-i18n="cs_add">Add</button>
+  <button class="ghost-del" id="cs-del" hidden data-i18n="cs_del">Delete this category</button>
+  <div class="cs-tip" id="cs-tip" data-i18n="cs_tip">Tasks in a deleted category become uncategorized.</div>
 </section>
 
 <!-- stats sheet (F1 report + F5 budget + F2 backup) -->
 <section class="sheet" id="stats-sheet" aria-hidden="true">
   <div class="grab"></div>
-  <h2 class="sh">统计与数据</h2>
+  <h2 class="sh" data-i18n="st_title">Stats &amp; data</h2>
   <div class="st-month card">
     <div class="st-mrow">
-      <div class="st-mc"><div class="lb2">支出</div><div class="st-neg" id="st-out">0</div></div>
-      <div class="st-mc"><div class="lb2">收入</div><div class="st-pos" id="st-in">0</div></div>
-      <div class="st-mc"><div class="lb2">结余</div><div class="st-bal" id="st-bal">0</div></div>
+      <div class="st-mc"><div class="lb2" data-i18n="st_out">Expenses</div><div class="st-neg" id="st-out">0</div></div>
+      <div class="st-mc"><div class="lb2" data-i18n="st_in">Income</div><div class="st-pos" id="st-in">0</div></div>
+      <div class="st-mc"><div class="lb2" data-i18n="st_bal">Balance</div><div class="st-bal" id="st-bal">0</div></div>
     </div>
   </div>
-  <div class="lb" style="margin-top:18px">分类占比（本月支出）</div>
-  <div class="st-bars card" id="st-cats"><div class="st-none">暂无支出</div></div>
-  <div class="lb" style="margin-top:18px">近 6 个月支出趋势</div>
+  <div class="lb" style="margin-top:18px">Category share (this month)</div>
+  <div class="st-bars card" id="st-cats"><div class="st-none" data-i18n="st_no_spend">No expenses yet</div></div>
+  <div class="lb" style="margin-top:18px" data-i18n="st_trend">6-month spend trend</div>
   <div class="st-trend card"><svg id="st-svg" viewBox="0 0 320 90" preserveAspectRatio="none"></svg><div class="st-months" id="st-months"></div></div>
-  <div class="lb" style="margin-top:18px">月度预算</div>
+  <div class="lb" style="margin-top:18px" data-i18n="st_budget">Monthly budget</div>
   <div class="st-budget card">
     <div class="bud-row">
-      <input class="f-in" id="bud-in" type="text" inputmode="numeric" placeholder="如 3000（留空关闭）">
-      <button class="save" id="bud-save">保存</button>
+      <input class="f-in" id="bud-in" type="text" inputmode="numeric" placeholder="e.g. 3000 (blank = off)" data-i18n-ph="bud_ph">
+      <button class="save" id="bud-save" data-i18n="save">Save</button>
     </div>
     <div class="bud-bar" id="bud-bar" hidden><div class="bud-fill" id="bud-fill"></div></div>
     <div class="bud-tip" id="bud-tip"></div>
   </div>
-  <div class="lb" style="margin-top:18px">数据管理</div>
+  <div class="lb" style="margin-top:18px" data-i18n="st_data">Data</div>
   <div class="st-data card">
-    <button class="mini-btn" id="exp-btn">导出备份</button>
-    <button class="mini-btn" id="imp-btn">导入恢复</button>
+    <button class="mini-btn" id="exp-btn" data-i18n="exp_btn">Export backup</button>
+    <button class="mini-btn" id="imp-btn" data-i18n="imp_btn">Import restore</button>
     <input type="file" id="imp-file" accept="application/json,.json" hidden>
-    <div class="cs-tip">导出包含待办、账目、备忘与分类（不含 AI 密钥）。导入会覆盖当前数据，请先导出留底。</div>
+    <div class="cs-tip" data-i18n="st_data_tip">Exports include todos, records, memos and categories (no AI keys). Import replaces current data — export a backup first.</div>
   </div>
 </section>
 
@@ -381,13 +384,29 @@
   <div class="grab"></div>
   <div class="sr-bar">
     <svg viewBox="0 0 18 18" fill="none" aria-hidden="true"><circle cx="8" cy="8" r="5.4" stroke="currentColor" stroke-width="1.8"/><path d="M12.2 12.2L16 16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-    <input id="sr-in" placeholder="搜索待办、备忘、账目…" autocomplete="off">
+    <input id="sr-in" placeholder="Search todos, memos, records…" data-i18n-ph="sr_ph" autocomplete="off">
   </div>
-  <div class="sr-res" id="sr-res"><div class="st-none">输入关键词试试</div></div>
+  <div class="sr-res" id="sr-res"><div class="st-none" data-i18n="sr_hint">Type a keyword to search</div></div>
 </section>
 
-<div class="toast" id="toast"><span id="toast-msg"></span><button id="toast-un" hidden>撤销</button></div>
+<!-- settings sheet -->
+<section class="sheet" id="set-sheet" aria-hidden="true">
+  <div class="grab"></div>
+  <h2 class="sh" data-i18n="set_title">Settings</h2>
+  <div class="lb" data-i18n="set_lang">Language</div>
+  <div class="chips-in" id="set-langs">
+    <button class="chip s" data-act="lang" data-id="en" data-i18n="set_lang_en">English</button>
+    <button class="chip s" data-act="lang" data-id="zh" data-i18n="set_lang_zh">中文</button>
+  </div>
+  <div class="lb" style="margin-top:18px" data-i18n="set_about">About</div>
+  <div class="st-data card">
+    <div class="cs-tip" data-i18n="set_about_body">AragonTask v1.6.1 — a local-first organizer. Todos, ledger, memos and an optional bring-your-own-key AI agent, all stored on your device.</div>
+  </div>
+</section>
 
+<div class="toast" id="toast"><span id="toast-msg"></span><button id="toast-un" hidden data-i18n="undo">Undo</button></div>
+
+<script src="./i18n.js"></script>
 <script src="./app.js"></script>
 </body>
 </html>
