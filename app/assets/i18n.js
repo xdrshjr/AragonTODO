@@ -305,7 +305,7 @@ const I18N = {
     set_lang_en: 'English',
     set_lang_zh: '中文',
     set_about: 'About',
-    set_about_body: 'AragonTask v1.6.1 — a local-first organizer. Todos, ledger, memos and an optional bring-your-own-key AI agent, all stored on your device.',
+    set_about_body: 'AragonTask v1.7.0 — a local-first organizer. Todos, ledger, memos and an optional bring-your-own-key AI agent, all stored on your device.',
 
     /* ---- seed data (first run only) ---- */
     seed_cat1: 'Work', seed_cat2: 'Life', seed_cat3: 'Study',
@@ -625,7 +625,7 @@ const I18N = {
     set_lang_en: 'English',
     set_lang_zh: '中文',
     set_about: '关于',
-    set_about_body: 'AragonTask v1.6.1 —— 本地优先的个人管理应用。待办、记账、备忘与自备 Key 的 AI 智能体，数据仅存本机。',
+    set_about_body: 'AragonTask v1.7.0 —— 本地优先的个人管理应用。待办、记账、备忘与自备 Key 的 AI 智能体，数据仅存本机。',
 
     /* ---- 种子数据（仅首次运行） ---- */
     seed_cat1: '工作', seed_cat2: '生活', seed_cat3: '学习',

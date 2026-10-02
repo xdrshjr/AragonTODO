@@ -106,5 +106,5 @@ The script runs aapt2 → javac → d8 → zipalign → apksigner, auto-generate
 ## Repository
 
 - Platform: Android 7.0+ (API 24+)
-- Current version: 1.6
+- Current version: 1.7
 - Language: Java (shell) + vanilla HTML/CSS/JS (UI), UI locale en (default) / zh-CN via in-app setting
